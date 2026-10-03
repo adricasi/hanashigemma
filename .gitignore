@@ -1,0 +1,44 @@
+# --- common ---
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+secrets/
+.reviews/
+.DS_Store
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+
+# --- local AI assistant configuration (kept private) ---
+AGENTS.md
+CLAUDE.md
+GEMINI.md
+.claude/
+.agents/
+.gemini/
+.devcontainer/
+docs/spec/progress.md
+
+# --- node / typescript ---
+node_modules/
+dist/
+coverage/
+*.tsbuildinfo
+
+# --- terraform ---
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+tfplan
+plan.json
+crash.log
+override.tf
+override.tf.json
+*_override.tf
+*.tfvars
+!*.tfvars.example
+backend.tf
