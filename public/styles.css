@@ -213,3 +213,11 @@ textarea:focus-visible {
   color: var(--muted);
   cursor: not-allowed;
 }
+
+.hosted-notice {
+  max-width: 44rem;
+  margin: 0 auto;
+  padding: 0 1rem;
+  color: var(--muted);
+  font-size: 0.875rem;
+}

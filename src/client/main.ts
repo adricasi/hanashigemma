@@ -1,5 +1,6 @@
-import { backendLabel, parseConfigView, type ScenarioView } from "./config.js";
+import { parseConfigView, type ScenarioView } from "./config.js";
 import { mountConversation } from "./conversation.js";
+import { renderBackend } from "./header.js";
 
 // NFR-001: every piece of text goes through textContent, never innerHTML.
 
@@ -41,7 +42,6 @@ function scenarioItem(scenario: ScenarioView): HTMLLIElement {
 
 async function start(): Promise<void> {
   const status = requireElement("status");
-  const badge = requireElement("backend-badge");
   const list = requireElement("scenarios");
 
   try {
@@ -50,7 +50,7 @@ async function start(): Promise<void> {
       throw new Error(`/api/config answered ${response.status}`);
     }
     const config = parseConfigView(await response.json());
-    badge.textContent = backendLabel(config.backend, config.model);
+    renderBackend(document, config);
     list.replaceChildren(...config.scenarios.map(scenarioItem));
     status.textContent = "";
     status.hidden = true;

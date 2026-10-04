@@ -121,7 +121,9 @@ the learner's text in the input.
 `OLLAMA_URL` (default `http://127.0.0.1:11434`); `GEMINI_API_KEY` (required when
 `GEMMA_BACKEND=gemini`, injected from Secret Manager); `PORT` (default 8080);
 `HOST` (default `127.0.0.1`, so a local install is not reachable from the LAN; the
-container sets `0.0.0.0`);
+container sets `0.0.0.0`); `TRUST_PROXY` (default `false`; `true` only behind Cloud Run,
+where the per-client limit takes the right-most `X-Forwarded-For` entry, which the
+client cannot forge);
 `DAILY_TURN_CAP` (default 500); `PER_MINUTE_LIMIT` (default 10).
 
 **Model call contract:** the prompt asks for JSON only, matching the schema, with a
@@ -194,7 +196,7 @@ prompt ("Your previous answer was invalid because …").
      create a 5 USD billing budget with 50/90/100% alerts.
   2. Every release: `gcloud run deploy hanashigemma --source . --region=europe-southwest1
      --service-account=hanashigemma-run@… --set-secrets=GEMINI_API_KEY=gemini-api-key:latest
-     --set-env-vars=GEMMA_BACKEND=gemini,GEMMA_MODEL=gemma-4-26b-a4b-it,HOST=0.0.0.0
+     --set-env-vars=GEMMA_BACKEND=gemini,GEMMA_MODEL=gemma-4-26b-a4b-it,HOST=0.0.0.0,TRUST_PROXY=true
      --allow-unauthenticated --min-instances=0 --max-instances=1 --memory=512Mi`.
   CI (GitHub Actions) runs lint, typecheck, tests and audit; it does **not** deploy in v1.
   `infra/` stays as the scaffold until the Terraform port (T-011).

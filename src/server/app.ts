@@ -6,6 +6,8 @@ import { secureHeaders } from "hono/secure-headers";
 import type { Config } from "../config.js";
 import type { ModelAdapter } from "../model/adapter.js";
 import { publicScenario, SCENARIOS } from "../scenarios.js";
+import { clientKey } from "./client-key.js";
+import { createRateLimiter, type RateLimiter } from "./rate-limit.js";
 import { handleTurn, rejectTurn } from "./turn.js";
 
 /** design.md, Data model: request body ≤ 32 KB. */
@@ -28,10 +30,23 @@ export interface AppOptions {
   /** Absolute path of the directory holding the built UI (index.html, styles, js/). */
   staticRoot: string;
   adapter: ModelAdapter;
+  /** Defaults to limits from the config; tests may pass their own. */
+  limiter?: RateLimiter;
 }
 
-export function createApp({ config, staticRoot, adapter }: AppOptions): Hono {
+export function createApp({ config, staticRoot, adapter, limiter }: AppOptions): Hono {
   const app = new Hono();
+  const turnContext = {
+    config,
+    adapter,
+    limiter:
+      limiter ??
+      createRateLimiter({
+        perMinute: config.perMinuteLimit,
+        // AC-011.4: the daily cap protects the hosted quota only.
+        dailyCap: config.backend === "gemini" ? config.dailyTurnCap : null,
+      }),
+  };
 
   // NFR-001: no inline scripts, no third-party origins, no framing.
   app.use(
@@ -103,7 +118,10 @@ export function createApp({ config, staticRoot, adapter }: AppOptions): Hono {
         body = undefined; // Not JSON: rejected as an invalid turn below.
       }
       // The request's signal aborts the model call if the browser goes away.
-      const result = await handleTurn({ config, adapter }, body, c.req.raw.signal);
+      const result = await handleTurn(turnContext, body, {
+        signal: c.req.raw.signal,
+        clientKey: clientKey(c, config.trustProxy),
+      });
       return c.json(result.body, result.status);
     },
   );

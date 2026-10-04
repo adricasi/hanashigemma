@@ -16,7 +16,7 @@ export interface ModelAdapter {
   generate(request: GenerateRequest): Promise<string>;
 }
 
-export type UnavailableReason = "unreachable" | "timeout" | "upstream" | "cancelled";
+export type UnavailableReason = "unreachable" | "timeout" | "upstream" | "cancelled" | "quota";
 
 /** The backend could not produce an answer (AC-010.3). Never carries message content. */
 export class ModelUnavailableError extends Error {
