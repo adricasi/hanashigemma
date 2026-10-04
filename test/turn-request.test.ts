@@ -85,6 +85,16 @@ describe("parseTurnRequest", () => {
     expect(rejection({ scenarioId: "izakaya-ramen", history, message: "はい" })).not.toBe("");
   });
 
+  it.each([
+    ["two learner turns in a row", [gemma("はい。"), learner("a"), learner("b"), gemma("はい。")]],
+    ["two Gemma turns in a row", [gemma("はい。"), learner("a"), gemma("は"), gemma("い")]],
+  ])("rejects history with %s as malformed, not as too long", (_name, history) => {
+    const message = rejection({ scenarioId: "izakaya-ramen", history, message: "はい" });
+
+    expect(message).toMatch(/not valid/);
+    expect(message).not.toMatch(/length limit/);
+  });
+
   it("AC-002.4: applies the 200-character limit to earlier learner messages too", () => {
     const history = [gemma("はい。"), learner("あ".repeat(201)), gemma("はい。")];
 

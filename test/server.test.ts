@@ -99,6 +99,31 @@ describe("security headers", () => {
   );
 });
 
+describe("Host header (DNS rebinding)", () => {
+  function requestWithHost(target: ReturnType<typeof app>, host: string) {
+    return target.request("http://placeholder/api/config", { headers: { host } });
+  }
+
+  it.each(["localhost:8080", "127.0.0.1:8080", "[::1]:8080", "localhost"])(
+    "NFR-001: answers a local install reached as %s",
+    async (host) => {
+      expect((await requestWithHost(app(), host)).status).toBe(200);
+    },
+  );
+
+  it("NFR-001: refuses another site's name pointed at the local install", async () => {
+    const response = await requestWithHost(app(), "evil.example:8080");
+
+    expect(response.status).toBe(403);
+  });
+
+  it("accepts any Host when listening on all interfaces (Cloud Run)", async () => {
+    const response = await requestWithHost(app({ HOST: "0.0.0.0" }), "hanashigemma.run.app");
+
+    expect(response.status).toBe(200);
+  });
+});
+
 describe("unexpected errors", () => {
   it("NFR-002: answer a generic 500 and log only the error type, never its message", async () => {
     const marker = "ラーメンをください key=AIza-secret";

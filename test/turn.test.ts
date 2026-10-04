@@ -129,6 +129,18 @@ describe("POST /api/turn", () => {
     expect(requests).toHaveLength(0);
   });
 
+  it("accepts the JSON media type in any letter case", async () => {
+    const { adapter } = fakeAdapter([validReplyJson()]);
+
+    const response = await app(adapter).request("/api/turn", {
+      method: "POST",
+      headers: { "content-type": "Application/JSON; charset=utf-8" },
+      body: JSON.stringify(start),
+    });
+
+    expect(response.status).toBe(200);
+  });
+
   it("passes the request's abort signal to the model", async () => {
     const { adapter, requests } = fakeAdapter([validReplyJson()]);
 

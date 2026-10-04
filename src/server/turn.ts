@@ -64,8 +64,8 @@ function turnRecorder(config: TurnContext["config"], startedAt: number): RecordT
 }
 
 /** A request rejected before reaching the model (bad body, size, content type). */
-export function rejectTurn(context: TurnContext, message: string): TurnResponse {
-  turnRecorder(context.config, performance.now())("unknown", 0, "not_attempted", "invalid_request");
+export function rejectTurn(config: TurnContext["config"], message: string): TurnResponse {
+  turnRecorder(config, performance.now())("unknown", 0, "not_attempted", "invalid_request");
   return { status: 400, body: { error: "invalid_request", message } };
 }
 

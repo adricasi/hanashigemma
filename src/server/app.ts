@@ -11,6 +11,18 @@ import { handleTurn, rejectTurn } from "./turn.js";
 /** design.md, Data model: request body ≤ 32 KB. */
 const MAX_TURN_BODY_BYTES = 32 * 1024;
 
+/** Names (and HOST values) that mean "this machine only". */
+const LOOPBACK_HOSTS = new Set(["localhost", "127.0.0.1", "::1", "[::1]"]);
+
+/** "localhost:8080" → "localhost", "[::1]:8080" → "[::1]". */
+function hostnameOf(hostHeader: string): string {
+  try {
+    return new URL(`http://${hostHeader}`).hostname;
+  } catch {
+    return "";
+  }
+}
+
 export interface AppOptions {
   config: Config;
   /** Absolute path of the directory holding the built UI (index.html, styles, js/). */
@@ -38,6 +50,18 @@ export function createApp({ config, staticRoot, adapter }: AppOptions): Hono {
     }),
   );
 
+  // DNS rebinding: a page on another site can point its own name at 127.0.0.1 and then call
+  // this server as "same origin". A local install therefore only answers to local names.
+  if (LOOPBACK_HOSTS.has(config.host)) {
+    app.use(async (c, next) => {
+      const host = c.req.header("host") ?? new URL(c.req.url).host;
+      if (!LOOPBACK_HOSTS.has(hostnameOf(host))) {
+        return c.text("Forbidden", 403);
+      }
+      await next();
+    });
+  }
+
   // Errors may carry learner text or upstream URLs, so only the error type is logged (NFR-002).
   app.onError((error, c) => {
     console.error(JSON.stringify({ message: "unhandled_error", errorType: error.name }));
@@ -60,14 +84,16 @@ export function createApp({ config, staticRoot, adapter }: AppOptions): Hono {
     bodyLimit({
       maxSize: MAX_TURN_BODY_BYTES,
       onError: (c) => {
-        const result = rejectTurn({ config, adapter }, "The request is too large.");
+        const result = rejectTurn(config, "The request is too large.");
         return c.json(result.body, result.status);
       },
     }),
     async (c) => {
       // JSON only: a text/plain POST from another site would skip the CORS preflight.
-      if (!(c.req.header("content-type") ?? "").startsWith("application/json")) {
-        const result = rejectTurn({ config, adapter }, "Requests must be sent as JSON.");
+      // Media types are case-insensitive (RFC 9110).
+      const contentType = (c.req.header("content-type") ?? "").trim().toLowerCase();
+      if (!contentType.startsWith("application/json")) {
+        const result = rejectTurn(config, "Requests must be sent as JSON.");
         return c.json(result.body, result.status);
       }
       let body: unknown;

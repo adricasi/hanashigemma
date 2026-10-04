@@ -78,7 +78,15 @@ export function mountConversation({ root, scenario, fetchFn }: ConversationOptio
     // AC-002.2: one turn at a time, with a visible waiting indicator.
     pending = value;
     waiting.hidden = !value;
-    sendButton.disabled = value;
+    updateControls();
+  }
+
+  function updateControls(): void {
+    // Send works only once Gemma has opened the scene (AC-001.2) and no turn is in flight.
+    sendButton.disabled = pending || !started;
+    // Read-only, not disabled: the text stays focusable and readable, but what was sent
+    // can't change mid-turn, so it can be cleared or kept as a whole afterwards.
+    input.readOnly = pending;
   }
 
   async function runTurn(body: TurnBody): Promise<void> {
@@ -96,12 +104,11 @@ export function mountConversation({ root, scenario, fetchFn }: ConversationOptio
     if (body.message !== null) {
       history.push({ role: "learner", text: body.message });
       appendLine("learner", body.message);
-      // Only clear what was sent: the learner may have typed ahead while waiting.
-      if (input.value.trim() === body.message) {
-        input.value = "";
-      }
+      // The input was read-only during the turn, so it still holds exactly what was sent.
+      input.value = "";
     }
     started = true;
+    updateControls();
     history.push({ role: "gemma", text: result.turn.jp });
     appendLine("gemma", result.turn.jp);
     lastBody = null;
@@ -137,8 +144,15 @@ export function mountConversation({ root, scenario, fetchFn }: ConversationOptio
     }
   });
   retryButton.addEventListener("click", () => {
-    if (lastBody !== null && !pending) {
+    if (pending) {
+      return;
+    }
+    // The opening line has no learner text, so it is retried as is; a learner turn is
+    // re-read from the input, which the learner may have corrected after the error.
+    if (lastBody?.message === null) {
       void runTurn(lastBody);
+    } else {
+      send();
     }
   });
 

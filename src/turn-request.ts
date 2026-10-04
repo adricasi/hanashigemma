@@ -51,8 +51,12 @@ export function parseTurnRequest(body: unknown): TurnRequestParse {
   }
   const reject = (text: string): TurnRequestParse => ({ ok: false, message: text, scenario });
 
-  // AC-001.2: Gemma speaks first, and each learner message is answered before the next one.
-  if (history.length > 0 && (history[0]?.role !== "gemma" || history.at(-1)?.role !== "gemma")) {
+  // AC-001.2: Gemma speaks first, then the turns alternate, ending with Gemma's answer.
+  const alternates = history.every((entry, index) => entry.role !== history[index - 1]?.role);
+  if (
+    history.length > 0 &&
+    (history[0]?.role !== "gemma" || history.at(-1)?.role !== "gemma" || !alternates)
+  ) {
     return reject("The conversation history is not valid. Please restart the scene.");
   }
   const tooLong = history.some(
@@ -63,9 +67,7 @@ export function parseTurnRequest(body: unknown): TurnRequestParse {
   }
 
   const learnerTurns = history.filter((entry) => entry.role === "learner").length;
-  // Gemma answers each learner message once, after its opening line.
-  const gemmaTurns = history.length - learnerTurns;
-  if (learnerTurns > MAX_EARLIER_LEARNER_MESSAGES || gemmaTurns > learnerTurns + 1) {
+  if (learnerTurns > MAX_EARLIER_LEARNER_MESSAGES) {
     return reject("This scene has reached its length limit. Please restart it.");
   }
 

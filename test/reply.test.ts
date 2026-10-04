@@ -112,6 +112,15 @@ describe("validateReply", () => {
     expect(invalidReason(JSON.stringify(reply))).toMatch(/hiragana/);
   });
 
+  it("trims spaces around a reading before checking it", () => {
+    const reply = validReply();
+    reply.segments[1] = { text: "注文", reading: " ちゅうもん " };
+
+    const result = validateReply(JSON.stringify(reply));
+
+    expect(result.ok && result.reply.segments[1]).toEqual({ text: "注文", reading: "ちゅうもん" });
+  });
+
   it("accepts the prolonged sound mark in a reading", () => {
     const reply = {
       ...validReply(),
@@ -190,6 +199,13 @@ describe("REPLY_JSON_SCHEMA", () => {
         "sceneEnded",
       ]) as unknown,
     });
+  });
+
+  it("tells the model jp must not be empty", () => {
+    const properties = (REPLY_JSON_SCHEMA as { properties: Record<string, { minLength?: number }> })
+      .properties;
+
+    expect(properties.jp?.minLength).toBe(1);
   });
 
   it("makes the model give every segment a reading (empty for kana)", () => {

@@ -165,6 +165,7 @@ prompt ("Your previous answer was invalid because …").
   | Prompt injection by the learner ("ignore your role…") | Only affects their own session; output is still schema-validated and rendered as text; the model has no tools or data access. **Accepted risk:** the browser holds the history, so a caller can forge earlier Gemma turns; the server checks history shape (starts and ends with Gemma, learner entries ≤ 200 chars) but cannot prove authorship without signing turns |
   | Quota exhaustion / cost abuse of the demo | Per-client per-minute limit, daily cap, max 1 instance, request size limits (REQ-011) |
   | Oversized requests | Body ≤ 32 KB (binds before the per-entry history limits in a long scene), message ≤ 200 chars, bounded history, bounded reply fields and retry prompt, `num_predict` cap on Ollama; model calls are aborted when the client disconnects; `POST /api/turn` accepts only `application/json` (no cross-site simple requests) |
+  | DNS rebinding against a local install (a web page reaching the friend's Ollama through the app) | With a loopback `HOST`, the server answers only requests whose `Host` is `localhost`, `127.0.0.1` or `[::1]` (403 otherwise); `POST /api/turn` also requires `application/json` |
   | Secret leak | Key only in Secret Manager → env var; config errors never print values (AC-010.2); gitleaks |
   | Leaking learner text in logs | Logger accepts only a fixed set of metadata fields (NFR-002, NFR-007) |
 

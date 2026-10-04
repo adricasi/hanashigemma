@@ -95,10 +95,12 @@ describe("conversation view", () => {
   });
 
   it("AC-002.2: shows a waiting indicator and blocks a second message while Gemma replies", async () => {
-    const { respond } = await startedConversation();
+    const { respond, fetchFn } = await startedConversation();
 
     typeAndSend("ラーメンをください。");
+    element<HTMLFormElement>("composer").requestSubmit();
 
+    expect(fetchFn).toHaveBeenCalledTimes(2); // the opening line and one send, not two
     expect(element("waiting").hidden).toBe(false);
     expect(element<HTMLButtonElement>("send-button").disabled).toBe(true);
     await respond(jsonResponse(200, reply("はい、かしこまりました。")));
@@ -167,6 +169,20 @@ describe("conversation view", () => {
     await respond(jsonResponse(200, reply("はい。")));
     expect(element("turn-error").hidden).toBe(true);
     expect(transcriptLines()).toEqual(["いらっしゃいませ。", "ラーメンをください。", "はい。"]);
+    expect(element<HTMLTextAreaElement>("message-input").value).toBe("");
+  });
+
+  it("AC-003.3: Retry sends the message as the learner corrected it", async () => {
+    const { respond, bodyOf } = await startedConversation();
+    typeAndSend("ラーメンがください。");
+    await respond(
+      jsonResponse(502, { error: "model_invalid_output", message: "Gemma got tongue-tied" }),
+    );
+
+    element<HTMLTextAreaElement>("message-input").value = "ラーメンをください。";
+    element("retry-button").click();
+
+    expect(bodyOf(2)).toMatchObject({ message: "ラーメンをください。" });
   });
 
   it("AC-010.3: shows the unavailable message and keeps the learner's message", async () => {
@@ -205,6 +221,7 @@ describe("conversation view", () => {
       jsonResponse(503, { error: "model_unavailable", message: "Gemma is unavailable." }),
     );
 
+    expect(element<HTMLButtonElement>("send-button").disabled).toBe(true);
     typeAndSend("ラーメンをください。");
     expect(api.fetchFn).toHaveBeenCalledTimes(1);
 
@@ -215,14 +232,15 @@ describe("conversation view", () => {
     expect(api.fetchFn).toHaveBeenCalledTimes(3);
   });
 
-  it("keeps text the learner typed while Gemma was replying", async () => {
+  it("locks the input while Gemma replies, so the sent text can't be edited mid-turn", async () => {
     const { respond } = await startedConversation();
 
     typeAndSend("ラーメンをください。");
-    element<HTMLTextAreaElement>("message-input").value = "みずも";
+    expect(element<HTMLTextAreaElement>("message-input").readOnly).toBe(true);
     await respond(jsonResponse(200, reply("はい。")));
 
-    expect(element<HTMLTextAreaElement>("message-input").value).toBe("みずも");
+    expect(element<HTMLTextAreaElement>("message-input").readOnly).toBe(false);
+    expect(element<HTMLTextAreaElement>("message-input").value).toBe("");
   });
 
   it("does not offer Retry for a request the server rejected", async () => {

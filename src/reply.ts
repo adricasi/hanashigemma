@@ -9,8 +9,10 @@ const text = (max: number) => z.string().trim().min(1).max(max);
 export const replySchema = z.object({
   // Not trimmed: the join check (AC-003.4) must compare against what the model wrote.
   // Capped so the reply can be sent back as a history entry on the next turn.
+  // min(1) also reaches the JSON schema sent to Ollama; the blank check below does not.
   jp: z
     .string()
+    .min(1)
     .max(MAX_HISTORY_ENTRY_LENGTH)
     .refine((value) => value.trim() !== "", "must not be blank"),
   segments: z
@@ -104,13 +106,14 @@ export function validateReply(raw: string): ReplyValidation {
       segments.push({ text: segment.text });
       continue;
     }
-    if (segment.reading === undefined || segment.reading.trim() === "") {
+    const reading = segment.reading?.trim() ?? "";
+    if (reading === "") {
       return invalid(`the segment "${segment.text}" contains kanji but has no reading`);
     }
-    if (!HIRAGANA_READING.test(segment.reading)) {
+    if (!HIRAGANA_READING.test(reading)) {
       return invalid(`the reading of "${segment.text}" must be written in hiragana only`);
     }
-    segments.push({ text: segment.text, reading: segment.reading });
+    segments.push({ text: segment.text, reading });
   }
 
   // AC-006.2: drop breakdown items whose phrase isn't in the reply; none left is invalid.
