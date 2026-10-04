@@ -429,6 +429,38 @@ describe("conversation view", () => {
     expect(element("turn-error").hidden).toBe(false);
   });
 
+  describe("suggested replies", () => {
+    const withSuggestion = (jp: string) => ({
+      ...reply(jp),
+      suggestions: [
+        { jp: "ラーメンをください。", romaji: "Raamen o kudasai.", en: "Ramen, please." },
+      ],
+    });
+
+    it("AC-007.2: copies a suggestion into the input without sending it", async () => {
+      const api = controlledFetch();
+      mountConversation({ root: document, scenario, fetchFn: api.fetchFn }).start();
+      await api.respond(jsonResponse(200, withSuggestion("いらっしゃいませ。")));
+
+      element("transcript").querySelector<HTMLButtonElement>("button.suggestion")!.click();
+
+      expect(element<HTMLTextAreaElement>("message-input").value).toBe("ラーメンをください。");
+      expect(api.fetchFn).toHaveBeenCalledTimes(1);
+    });
+
+    it("AC-007.1: shows a suggestion's romaji and English under the same rule as the reply", async () => {
+      const api = controlledFetch();
+      mountConversation({ root: document, scenario, fetchFn: api.fetchFn }).start();
+      await api.respond(jsonResponse(200, withSuggestion("いらっしゃいませ。")));
+      const translation =
+        element("transcript").querySelector<HTMLElement>(".suggestion-translation")!;
+
+      expect(translation.hidden).toBe(true);
+      element<HTMLInputElement>("translation-toggle").click();
+      expect(translation.hidden).toBe(false);
+    });
+  });
+
   it("NFR-001: shows markup in model output as literal text", async () => {
     await startedConversation('<img src="x" onerror="alert(1)">');
 

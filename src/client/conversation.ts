@@ -1,5 +1,10 @@
 import type { ScenarioView } from "./config.js";
-import { buildGemmaTurn, HIDE_TRANSLATION, SHOW_TRANSLATION } from "./render-turn.js";
+import {
+  buildGemmaTurn,
+  HIDE_TRANSLATION,
+  JAPANESE_SCRIPT,
+  SHOW_TRANSLATION,
+} from "./render-turn.js";
 import {
   checkDraft,
   MAX_MESSAGE_LENGTH,
@@ -11,9 +16,6 @@ import {
 } from "./turn-api.js";
 
 // NFR-001: every piece of text goes through textContent, never innerHTML.
-
-/** Hiragana, katakana and CJK ideographs. */
-const JAPANESE_SCRIPT = /[぀-ヿ㐀-䶿一-鿿]/;
 
 export interface ConversationOptions {
   root: Document;
@@ -82,7 +84,12 @@ export function mountConversation({
       return;
     }
     const opened = button.getAttribute("aria-expanded") === "true";
-    panel.hidden = !(opened || translationToggle.checked);
+    const visible = opened || translationToggle.checked;
+    panel.hidden = !visible;
+    // AC-007.1: suggestions follow the same rule as the reply.
+    for (const translation of item.querySelectorAll<HTMLElement>(".suggestion-translation")) {
+      translation.hidden = !visible;
+    }
     // With "Always show" on, the per-turn button has nothing to do.
     button.hidden = translationToggle.checked;
   }
@@ -97,6 +104,16 @@ export function mountConversation({
       button.textContent = opened ? HIDE_TRANSLATION : SHOW_TRANSLATION;
       applyTranslation(item);
     });
+    for (const suggestion of item.querySelectorAll<HTMLButtonElement>("button.suggestion")) {
+      suggestion.addEventListener("click", () => {
+        // AC-007.2: fill the input, don't send, so the learner can edit it first.
+        if (pending) {
+          return;
+        }
+        input.value = suggestion.textContent ?? "";
+        input.focus();
+      });
+    }
     transcript.append(item);
     applyTranslation(item);
     applyFurigana();

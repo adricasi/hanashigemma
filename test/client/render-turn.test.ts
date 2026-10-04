@@ -9,6 +9,9 @@ const turn: GemmaTurn = {
   segments: [{ text: "ご" }, { text: "注文", reading: "ちゅうもん" }, { text: "は？" }],
   romaji: "Go-chuumon wa?",
   en: "What would you like to order?",
+  breakdown: [],
+  suggestions: [],
+  fix: null,
 };
 
 function render(value: GemmaTurn = turn) {
@@ -62,6 +65,9 @@ describe("buildGemmaTurn", () => {
       segments: [{ text: markup }, { text: "注", reading: markup }],
       romaji: markup,
       en: markup,
+      breakdown: [],
+      suggestions: [],
+      fix: null,
     });
 
     expect(item.querySelector("img")).toBeNull();
@@ -69,5 +75,122 @@ describe("buildGemmaTurn", () => {
     expect(item.querySelector("rt")?.textContent).toBe(markup);
     expect(item.querySelector(".turn-romaji")?.textContent).toBe(markup);
     expect(item.querySelector(".turn-en")?.textContent).toBe(markup);
+  });
+});
+
+describe("tutor parts", () => {
+  const full: GemmaTurn = {
+    ...turn,
+    breakdown: [
+      { phrase: "注文", explanation: "Order (noun)." },
+      { phrase: "は", explanation: "Topic particle." },
+    ],
+    suggestions: [
+      { jp: "ラーメンをください。", romaji: "Raamen o kudasai.", en: "Ramen, please." },
+      { jp: "みずをください。", romaji: "Mizu o kudasai.", en: "Water, please." },
+    ],
+    fix: {
+      original: "ラーメンがください",
+      natural: "ラーメンをください",
+      issue: "particle",
+      explanation: "So close! With ください the thing you ask for takes を.",
+    },
+  };
+
+  it("AC-006.1: offers a collapsed Breakdown listing each phrase with its explanation", () => {
+    const breakdown = buildGemmaTurn(document, full, "t2").querySelector("details.breakdown");
+
+    expect(breakdown).not.toBeNull();
+    expect((breakdown as HTMLDetailsElement).open).toBe(false);
+    expect(breakdown?.querySelector("summary")?.textContent).toBe("Gemma's Breakdown");
+    const phrases = [...(breakdown?.querySelectorAll("dt") ?? [])];
+    expect(phrases.map((dt) => dt.textContent)).toEqual(["注文", "は"]);
+    expect(phrases.every((dt) => dt.getAttribute("lang") === "ja")).toBe(true);
+    expect([...(breakdown?.querySelectorAll("dd") ?? [])].map((dd) => dd.textContent)).toEqual([
+      "Order (noun).",
+      "Topic particle.",
+    ]);
+  });
+
+  it("AC-007.1: shows each suggested reply in Japanese with its romaji and English", () => {
+    const item = buildGemmaTurn(document, full, "t3");
+    const buttons = [...item.querySelectorAll<HTMLButtonElement>("button.suggestion")];
+
+    expect(buttons.map((button) => button.textContent)).toEqual([
+      "ラーメンをください。",
+      "みずをください。",
+    ]);
+    expect(buttons.every((button) => button.getAttribute("lang") === "ja")).toBe(true);
+    const translations = [...item.querySelectorAll(".suggestion-translation")];
+    expect(translations.map((t) => t.textContent)).toEqual([
+      "Raamen o kudasai. — Ramen, please.",
+      "Mizu o kudasai. — Water, please.",
+    ]);
+  });
+
+  it("AC-008.1: shows the Gentle Fix above the reply with original, natural version, issue and explanation", () => {
+    const item = buildGemmaTurn(document, full, "t4");
+    const card = item.querySelector(".gentle-fix");
+    const reply = item.querySelector(".turn-text");
+
+    expect(card).not.toBeNull();
+    expect(card!.compareDocumentPosition(reply!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(card?.querySelector(".fix-original")?.textContent).toBe("ラーメンがください");
+    expect(card?.querySelector(".fix-natural")?.textContent).toBe("ラーメンをください");
+    expect(card?.querySelector(".fix-natural")?.getAttribute("lang")).toBe("ja");
+    expect(card?.querySelector(".fix-issue")?.textContent).toBe("Particle");
+    expect(card?.querySelector(".fix-explanation")?.textContent).toContain("So close!");
+  });
+
+  it("AC-008.4: labels the Gentle Fix encouragingly, never as wrong, incorrect or an error", () => {
+    const card = buildGemmaTurn(document, full, "t5").querySelector(".gentle-fix");
+    const label = card?.querySelector(".fix-label")?.textContent ?? "";
+
+    expect(label).not.toBe("");
+    expect(label).not.toMatch(/wrong|incorrect|error/i);
+  });
+
+  it("AC-008.6: labels a fix for English or romaji input as how to say it in Japanese", () => {
+    const item = buildGemmaTurn(
+      document,
+      {
+        ...full,
+        fix: {
+          original: "I want ramen",
+          natural: "ラーメンをください。",
+          issue: "other",
+          explanation: "Here's how to ask for it in Japanese.",
+        },
+      },
+      "t6",
+    );
+
+    expect(item.querySelector(".fix-issue")?.textContent).toBe("Tip");
+    expect(item.querySelector(".fix-original")?.hasAttribute("lang")).toBe(false);
+  });
+
+  it("AC-008.3: shows no Gentle Fix when the learner's message was fine", () => {
+    expect(
+      buildGemmaTurn(document, { ...full, fix: null }, "t7").querySelector(".gentle-fix"),
+    ).toBeNull();
+  });
+
+  it("NFR-001: shows markup in breakdown, suggestions and fix as literal text", () => {
+    const markup = "<img src=x onerror=alert(1)>";
+    const item = buildGemmaTurn(
+      document,
+      {
+        ...full,
+        breakdown: [{ phrase: markup, explanation: markup }],
+        suggestions: [{ jp: markup, romaji: markup, en: markup }],
+        fix: { original: markup, natural: markup, issue: "other", explanation: markup },
+      },
+      "t8",
+    );
+
+    expect(item.querySelector("img")).toBeNull();
+    expect(item.querySelector("dt")?.textContent).toBe(markup);
+    expect(item.querySelector("button.suggestion")?.textContent).toBe(markup);
+    expect(item.querySelector(".fix-explanation")?.textContent).toBe(markup);
   });
 });

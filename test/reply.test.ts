@@ -217,3 +217,39 @@ describe("REPLY_JSON_SCHEMA", () => {
     expect(segments.items.required).toEqual(expect.arrayContaining(["text", "reading"]));
   });
 });
+
+describe("validateReply on the last attempt (AC-003.5)", () => {
+  it("AC-003.5: keeps a turn whose only problem is a missing reading, without furigana there", () => {
+    const reply = validReply();
+    reply.segments[1] = { text: "注文", reading: "" };
+
+    const result = validateReply(JSON.stringify(reply), { allowMissingReadings: true });
+
+    expect(result.ok && result.reply.segments[1]).toEqual({ text: "注文" });
+  });
+
+  it("AC-003.5: drops a reading that isn't hiragana instead of failing", () => {
+    const reply = validReply();
+    reply.segments[1] = { text: "注文", reading: "chuumon" };
+
+    const result = validateReply(JSON.stringify(reply), { allowMissingReadings: true });
+
+    expect(result.ok && result.reply.segments[1]).toEqual({ text: "注文" });
+  });
+
+  it("AC-006.2: still rejects a missing reading plus a breakdown phrase not in jp", () => {
+    const reply = {
+      ...validReply(),
+      segments: validReply().segments.map(({ text }) => ({ text })),
+      breakdown: [{ phrase: "ありがとう", explanation: "Not in the reply." }],
+    };
+
+    expect(validateReply(JSON.stringify(reply), { allowMissingReadings: true }).ok).toBe(false);
+  });
+
+  it("AC-003.4: still rejects segments that don't join to jp", () => {
+    const reply = { ...validReply(), segments: [{ text: "いらっしゃいませ" }] };
+
+    expect(validateReply(JSON.stringify(reply), { allowMissingReadings: true }).ok).toBe(false);
+  });
+});

@@ -71,7 +71,15 @@ function invalid(error: string): ReplyValidation {
  * Parses and validates raw model output. Errors are written for the model: on the retry
  * they are fed back to it as the reason its previous answer was rejected (AC-003.2).
  */
-export function validateReply(raw: string): ReplyValidation {
+export interface ValidateOptions {
+  /** AC-003.5: on the last attempt, show kanji without furigana rather than fail. */
+  allowMissingReadings?: boolean;
+}
+
+export function validateReply(
+  raw: string,
+  { allowMissingReadings = false }: ValidateOptions = {},
+): ReplyValidation {
   const trimmed = raw.trim();
   const unfenced = CODE_FENCE.exec(trimmed)?.[1] ?? trimmed;
 
@@ -107,11 +115,18 @@ export function validateReply(raw: string): ReplyValidation {
       continue;
     }
     const reading = segment.reading?.trim() ?? "";
-    if (reading === "") {
-      return invalid(`the segment "${segment.text}" contains kanji but has no reading`);
-    }
-    if (!HIRAGANA_READING.test(reading)) {
-      return invalid(`the reading of "${segment.text}" must be written in hiragana only`);
+    const problem =
+      reading === ""
+        ? `the segment "${segment.text}" contains kanji but has no reading`
+        : HIRAGANA_READING.test(reading)
+          ? null
+          : `the reading of "${segment.text}" must be written in hiragana only`;
+    if (problem !== null) {
+      if (!allowMissingReadings) {
+        return invalid(problem);
+      }
+      segments.push({ text: segment.text });
+      continue;
     }
     segments.push({ text: segment.text, reading });
   }
