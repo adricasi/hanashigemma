@@ -8,6 +8,10 @@ your own laptop** with Google's open-weight **Gemma 4** model through
 
 > Built for the DEV Hacktoberfest Weekend Challenge: *Build for a Friend*.
 
+## Demo
+
+[HanashiGemma Demo](https://www.youtube.com/watch?v=Xcb_41Hrddw).
+
 ## What it does
 
 Pick one of three scenes — **buying a train ticket at Shinjuku**, **ordering ramen at an
