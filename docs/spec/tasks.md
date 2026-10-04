@@ -14,7 +14,7 @@ short, cut from the bottom of Milestone 3 first; the submission only needs a vid
 a deployed link, and Milestone 1 already produces a public URL.
 
 ## Milestone 0: Prerequisites (human, ~30 min, before T-001)
-- [ ] T-000: Prepare the machine and accounts
+- [x] T-000: Prepare the machine and accounts
   - Requirements: — (enables everything)
   - Scope: install Node.js LTS inside WSL (`nvm install --lts`), `rm -rf node_modules &&
     npm ci`; install Ollama and `ollama pull gemma4:e4b` (or `gemma4:e2b`); create or pick
