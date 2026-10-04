@@ -1,0 +1,30 @@
+# Only what the build needs goes into the image context.
+# Secrets first: a local .env must never reach Cloud Build or the image.
+.env
+.env.*
+*.pem
+*.key
+secrets/
+
+# Build output and dependencies are recreated inside the image.
+node_modules/
+dist/
+coverage/
+*.tsbuildinfo
+
+# Not part of the app.
+.git/
+.github/
+.reviews/
+.claude/
+.agents/
+.gemini/
+.devcontainer/
+.vscode/
+.idea/
+infra/
+docs/
+test/
+*.md
+Dockerfile
+.dockerignore

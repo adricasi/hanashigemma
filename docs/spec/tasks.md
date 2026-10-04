@@ -49,7 +49,7 @@ a deployed link, and Milestone 1 already produces a public URL.
     AC-010.3 and the timeout pass (fake adapter + stub HTTP server); a manual session
     with real `gemma4:e4b` completes 5 turns in one scenario; checks green.
 
-- [ ] T-003: Hosted Gemma adapter, demo limits and container (~1 h)
+- [~] T-003: Hosted Gemma adapter, demo limits and container (~1 h)
   - Requirements: REQ-010 (AC-010.4), REQ-011, NFR-001, NFR-005
   - Depends on: T-002
   - Scope: Gemini API adapter (`generateContent` via `fetch`, code-fence stripping, 429 →

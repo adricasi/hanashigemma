@@ -245,6 +245,100 @@ describe("POST /api/turn", () => {
     }
   });
 
+  it("AC-011.1: refuses turns over the per-minute limit with a 'slow down' message", async () => {
+    const { adapter, requests } = fakeAdapter([validReplyJson(), validReplyJson()]);
+    const target = app(adapter, { PER_MINUTE_LIMIT: "2" });
+
+    await postTurn(target, start);
+    await postTurn(target, start);
+    const response = await postTurn(target, start);
+    const body = (await response.json()) as { error: string; message: string };
+
+    expect(response.status).toBe(429);
+    expect(body.error).toBe("rate_limited");
+    expect(body.message).toMatch(/slow down/i);
+    expect(requests).toHaveLength(2);
+    expect(loggedRecords().at(-1)).toMatchObject({ attempts: 0, errorType: "rate_limited" });
+  });
+
+  it("AC-011.1: counts a retried turn once", async () => {
+    const { adapter, requests } = fakeAdapter(["nope", validReplyJson(), validReplyJson()]);
+    const target = app(adapter, { PER_MINUTE_LIMIT: "1" });
+
+    const first = await postTurn(target, start);
+    const second = await postTurn(target, start);
+
+    expect(first.status).toBe(200);
+    expect(requests).toHaveLength(2);
+    expect(second.status).toBe(429);
+  });
+
+  it("AC-011.3: answers demo_busy when the quota runs out on the retry", async () => {
+    const { adapter } = fakeAdapter(["nope", new ModelUnavailableError("quota")]);
+    const target = app(adapter, { GEMMA_BACKEND: "gemini", GEMINI_API_KEY: "test-key" });
+
+    const response = await postTurn(target, start);
+
+    expect(response.status).toBe(503);
+    expect(await response.json()).toMatchObject({ error: "demo_busy" });
+    expect(loggedRecords().at(-1)).toMatchObject({ attempts: 2, validation: "failed" });
+  });
+
+  it("AC-011.1: does not count rejected requests against the limit", async () => {
+    const { adapter } = fakeAdapter([validReplyJson()]);
+    const target = app(adapter, { PER_MINUTE_LIMIT: "1" });
+
+    await postTurn(target, { ...start, scenarioId: "nope" });
+    const response = await postTurn(target, start);
+
+    expect(response.status).toBe(200);
+  });
+
+  it("AC-011.2: refuses turns over the daily cap on the hosted backend, pointing to the README", async () => {
+    const { adapter, requests } = fakeAdapter([validReplyJson(), validReplyJson()]);
+    const target = app(adapter, {
+      GEMMA_BACKEND: "gemini",
+      GEMINI_API_KEY: "test-key",
+      DAILY_TURN_CAP: "1",
+    });
+
+    await postTurn(target, start);
+    const response = await postTurn(target, start);
+    const body = (await response.json()) as { error: string; message: string };
+
+    expect(response.status).toBe(503);
+    expect(body.error).toBe("demo_busy");
+    expect(body.message).toMatch(/README/);
+    expect(requests).toHaveLength(1);
+  });
+
+  it("AC-011.4: applies no daily cap on the local backend", async () => {
+    const { adapter } = fakeAdapter([validReplyJson(), validReplyJson()]);
+    const target = app(adapter, { DAILY_TURN_CAP: "1" });
+
+    await postTurn(target, start);
+    const response = await postTurn(target, start);
+
+    expect(response.status).toBe(200);
+  });
+
+  it("AC-011.3: shows the same 'demo is busy' message when the hosted model hits its quota", async () => {
+    const { adapter } = fakeAdapter([new ModelUnavailableError("quota")]);
+    const target = app(adapter, { GEMMA_BACKEND: "gemini", GEMINI_API_KEY: "test-key" });
+
+    const response = await postTurn(target, start);
+    const capped = app(fakeAdapter([validReplyJson()]).adapter, {
+      GEMMA_BACKEND: "gemini",
+      GEMINI_API_KEY: "test-key",
+      DAILY_TURN_CAP: "1",
+    });
+    await postTurn(capped, start);
+    const dailyCap = (await (await postTurn(capped, start)).json()) as { message: string };
+
+    expect(response.status).toBe(503);
+    expect(await response.json()).toEqual({ error: "demo_busy", message: dailyCap.message });
+  });
+
   it("AC-010.3: leaves out the Ollama hint on the hosted backend", async () => {
     const { adapter } = fakeAdapter([new ModelUnavailableError("unreachable")]);
 

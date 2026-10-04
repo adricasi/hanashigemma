@@ -57,6 +57,12 @@ describe("loadConfig", () => {
     expect(configError({ HOST: "localhost; rm -rf /" }).message).toContain("HOST");
   });
 
+  it("AC-011.1: trusts proxy headers only when TRUST_PROXY=true", () => {
+    expect(loadConfig({}).trustProxy).toBe(false);
+    expect(loadConfig({ TRUST_PROXY: "true" }).trustProxy).toBe(true);
+    expect(configError({ TRUST_PROXY: "yes" }).message).toContain("TRUST_PROXY");
+  });
+
   it("AC-010.1: reads the port and limits from configuration", () => {
     const config = loadConfig({ PORT: "3000", DAILY_TURN_CAP: "200", PER_MINUTE_LIMIT: "5" });
 

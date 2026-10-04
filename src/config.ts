@@ -16,6 +16,8 @@ export interface Config {
   port: number;
   /** Interface to listen on; localhost by default so the LAN can't reach a local install. */
   host: string;
+  /** Behind Cloud Run: take the client address from X-Forwarded-For (AC-011.1). */
+  trustProxy: boolean;
   dailyTurnCap: number;
   perMinuteLimit: number;
 }
@@ -48,6 +50,7 @@ const envSchema = z
       .string()
       .regex(/^[A-Za-z0-9.:-]+$/, "must be an IP address or host name")
       .default("127.0.0.1"),
+    TRUST_PROXY: z.enum(["true", "false"]).default("false"),
     DAILY_TURN_CAP: positiveInt.default(500),
     PER_MINUTE_LIMIT: positiveInt.default(10),
   })
@@ -77,6 +80,7 @@ export function loadConfig(env: Record<string, string | undefined>): Config {
     geminiApiKey: parsed.GEMINI_API_KEY ?? null,
     port: parsed.PORT,
     host: parsed.HOST,
+    trustProxy: parsed.TRUST_PROXY === "true",
     dailyTurnCap: parsed.DAILY_TURN_CAP,
     perMinuteLimit: parsed.PER_MINUTE_LIMIT,
   };

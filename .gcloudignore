@@ -1,0 +1,14 @@
+# What `gcloud run deploy --source` uploads to Cloud Build (it does not read .dockerignore).
+# Allowlist: ignore everything, then add back only what the Dockerfile needs, so a local
+# .env, key file or tfstate can never be uploaded.
+*
+!package.json
+!package-lock.json
+!tsconfig.json
+!tsconfig.build.json
+!src/
+!src/**
+!public/
+!public/**
+!Dockerfile
+!.dockerignore
