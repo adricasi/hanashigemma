@@ -70,6 +70,7 @@ scripted runs and hand review defined in the product success metrics).
     schema, which contains: the Japanese reply split into segments with a hiragana
     reading for every segment containing kanji; romaji; English translation; 1–4
     breakdown items; 1–2 suggested replies; and an optional Gentle Fix (REQ-008).
+    (Exception for missing readings on the retry: AC-003.5.)
   - AC-003.2: IF the model output is not valid against the schema THEN THE SYSTEM SHALL
     retry the generation once.
   - AC-003.3: IF the retry is also invalid THEN THE SYSTEM SHALL show a friendly error
@@ -78,6 +79,11 @@ scripted runs and hand review defined in the product success metrics).
   - AC-003.4: WHEN a turn passes validation THE SYSTEM SHALL check that the segments,
     joined, equal the Japanese reply text; IF they don't THEN THE SYSTEM SHALL treat the
     output as invalid (AC-003.2).
+  - AC-003.5: IF the retry's only problem is that some kanji segments lack a valid hiragana
+    reading THEN THE SYSTEM SHALL show the turn with those segments without furigana
+    instead of the AC-003.3 error. *(Added 2026-10-04: measured on gemma4:e4b, missing
+    readings made correct learner messages end in "tongue-tied"; romaji and English still
+    carry the meaning.)*
 
 ### REQ-004: Furigana on the Japanese reply
 - Story: As a learner, I want readings above the kanji, so that I can read Gemma's reply
@@ -86,7 +92,8 @@ scripted runs and hand review defined in the product success metrics).
 - Goals: G-2
 - Acceptance criteria:
   - AC-004.1: WHEN a Gemma turn is shown THE SYSTEM SHALL display the Japanese reply with
-    the hiragana reading of every kanji segment as ruby text above it.
+    the hiragana reading of every kanji segment as ruby text above it (except segments
+    accepted without a reading under AC-003.5).
   - AC-004.2: WHEN the learner switches the furigana toggle off THE SYSTEM SHALL hide all
     ruby readings in the conversation, and show them again when it is switched on.
   - AC-004.3: WHEN the app loads THE SYSTEM SHALL have furigana switched on.

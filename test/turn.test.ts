@@ -173,6 +173,60 @@ describe("POST /api/turn", () => {
     expect(requests).toHaveLength(2);
   });
 
+  it("AC-003.5: shows the retry without furigana where readings are still missing", async () => {
+    const missing = JSON.stringify({
+      ...validReply(),
+      segments: validReply().segments.map(({ text }) => ({ text })),
+    });
+    const { adapter, requests } = fakeAdapter([missing, missing]);
+
+    const response = await postTurn(app(adapter), start);
+    const body = (await response.json()) as { segments: Array<{ reading?: string }> };
+
+    expect(response.status).toBe(200);
+    expect(requests).toHaveLength(2);
+    expect(body.segments.every((segment) => segment.reading === undefined)).toBe(true);
+  });
+
+  it("AC-003.5: still asks for the readings on the first attempt", async () => {
+    const missing = JSON.stringify({
+      ...validReply(),
+      segments: validReply().segments.map(({ text }) => ({ text })),
+    });
+    const { adapter, requests } = fakeAdapter([missing, validReplyJson()]);
+
+    const response = await postTurn(app(adapter), start);
+
+    expect(await response.json()).toEqual(validReply());
+    expect(requests).toHaveLength(2);
+    expect(requests[1]?.messages.at(-1)?.content).toMatch(/reading/);
+  });
+
+  it("AC-008.3: never shows a Gentle Fix on the opening line (the learner hasn't written yet)", async () => {
+    const withFix = JSON.stringify({
+      ...validReply(),
+      fix: { original: "x", natural: "y", issue: "other", explanation: "z" },
+    });
+    const { adapter } = fakeAdapter([withFix]);
+
+    const response = await postTurn(app(adapter), start);
+
+    expect(((await response.json()) as { fix: unknown }).fix).toBeNull();
+  });
+
+  it("AC-003.5: still rejects a retry with other problems besides missing readings", async () => {
+    const broken = JSON.stringify({
+      ...validReply(),
+      segments: validReply().segments.map(({ text }) => ({ text })),
+      breakdown: [{ phrase: "ありがとう", explanation: "Not in the reply." }],
+    });
+    const { adapter } = fakeAdapter([broken, broken]);
+
+    const response = await postTurn(app(adapter), start);
+
+    expect(response.status).toBe(502);
+  });
+
   it("AC-003.3: answers a friendly error after a second invalid output", async () => {
     const { adapter, requests } = fakeAdapter(["nope", "still nope"]);
 

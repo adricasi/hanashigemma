@@ -18,6 +18,18 @@ describe("buildMessages", () => {
     expect(system?.content).toMatch(/never use the words/i);
   });
 
+  it("AC-008.6: asks for a fix with the Japanese version when the learner writes English or romaji", () => {
+    const [system] = buildMessages(ramen, [], null);
+
+    expect(system?.content).toMatch(/English or (in )?romaji[^.]*fix/i);
+  });
+
+  it("AC-008.3: tells the model that kana instead of kanji is not a mistake", () => {
+    const [system] = buildMessages(ramen, [], null);
+
+    expect(system?.content).toMatch(/hiragana or katakana instead of kanji is not a mistake/i);
+  });
+
   it("AC-001.2: asks Gemma to speak first when the scene starts", () => {
     const messages = buildMessages(ramen, [], null);
 

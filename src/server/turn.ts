@@ -142,10 +142,14 @@ export async function handleTurn(
       };
     }
 
-    const validation = validateReply(raw);
+    // AC-003.5: the last attempt may leave some kanji without furigana.
+    const validation = validateReply(raw, { allowMissingReadings: attempt === MAX_ATTEMPTS });
     if (validation.ok) {
       record(scenario.id, attempt, "passed", null);
-      return { status: 200, body: validation.reply };
+      // AC-008.3: nothing to correct before the learner has written anything.
+      const reply =
+        request.message === null ? { ...validation.reply, fix: null } : validation.reply;
+      return { status: 200, body: reply };
     }
     messages = retryMessages(messages, raw, validation.error);
   }

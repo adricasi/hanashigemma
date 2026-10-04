@@ -19,13 +19,38 @@ export interface Segment {
   reading?: string;
 }
 
-/** The reply fields this view renders; later tasks render the rest of the reply. */
+export interface BreakdownItem {
+  phrase: string;
+  explanation: string;
+}
+
+export interface Suggestion {
+  jp: string;
+  romaji: string;
+  en: string;
+}
+
+export type FixIssue = "particle" | "politeness" | "vocabulary" | "grammar" | "other";
+
+export interface GentleFix {
+  original: string;
+  natural: string;
+  issue: FixIssue;
+  explanation: string;
+}
+
+/** The reply fields the conversation renders (design.md, Data model: Reply). */
 export interface GemmaTurn {
   jp: string;
   segments: Segment[];
   romaji: string;
   en: string;
+  breakdown: BreakdownItem[];
+  suggestions: Suggestion[];
+  fix: GentleFix | null;
 }
+
+const FIX_ISSUES: readonly string[] = ["particle", "politeness", "vocabulary", "grammar", "other"];
 
 export type TurnResult =
   { ok: true; turn: GemmaTurn } | { ok: false; error: string; message: string; canRetry: boolean };
@@ -59,6 +84,47 @@ function parseSegment(value: unknown): Segment | null {
     : { text: value.text };
 }
 
+function strings<K extends string>(value: unknown, keys: readonly K[]): Record<K, string> | null {
+  if (!isRecord(value)) {
+    return null;
+  }
+  const result = {} as Record<K, string>;
+  for (const key of keys) {
+    const field = value[key];
+    if (typeof field !== "string") {
+      return null;
+    }
+    result[key] = field;
+  }
+  return result;
+}
+
+function parseList<T>(value: unknown, parse: (item: unknown) => T | null): T[] | null {
+  if (!Array.isArray(value)) {
+    return null;
+  }
+  const items: T[] = [];
+  for (const entry of value) {
+    const item = parse(entry);
+    if (item === null) {
+      return null;
+    }
+    items.push(item);
+  }
+  return items;
+}
+
+function parseFix(value: unknown): GentleFix | null | undefined {
+  if (value === null || value === undefined) {
+    return null;
+  }
+  const fields = strings(value, ["original", "natural", "issue", "explanation"]);
+  if (fields === null || !FIX_ISSUES.includes(fields.issue)) {
+    return undefined; // present but malformed
+  }
+  return { ...fields, issue: fields.issue as FixIssue };
+}
+
 /** The server validated the reply; this only guards the shape the view relies on. */
 function parseGemmaTurn(data: unknown): GemmaTurn | null {
   if (
@@ -70,19 +136,25 @@ function parseGemmaTurn(data: unknown): GemmaTurn | null {
   ) {
     return null;
   }
-  const segments: Segment[] = [];
-  for (const value of data.segments) {
-    const segment = parseSegment(value);
-    if (segment === null) {
-      return null;
-    }
-    segments.push(segment);
+  const segments = parseList(data.segments, parseSegment);
+  const breakdown = parseList(data.breakdown ?? [], (item) =>
+    strings(item, ["phrase", "explanation"]),
+  );
+  const suggestions = parseList(data.suggestions ?? [], (item) =>
+    strings(item, ["jp", "romaji", "en"]),
+  );
+  const fix = parseFix(data.fix);
+  if (segments === null || breakdown === null || suggestions === null || fix === undefined) {
+    return null;
   }
   return {
     jp: data.jp,
     segments,
     romaji: data.romaji,
     en: data.en,
+    breakdown,
+    suggestions,
+    fix,
   };
 }
 

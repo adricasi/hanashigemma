@@ -14,7 +14,10 @@ function respondWith(data: unknown) {
 
 describe("postTurn", () => {
   it("accepts a reply with the fields the view renders", async () => {
-    expect(await postTurn(respondWith(valid), body)).toEqual({ ok: true, turn: valid });
+    expect(await postTurn(respondWith(valid), body)).toEqual({
+      ok: true,
+      turn: { ...valid, breakdown: [], suggestions: [], fix: null },
+    });
   });
 
   it.each([

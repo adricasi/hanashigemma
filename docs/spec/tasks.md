@@ -79,7 +79,7 @@ a deployed link, and Milestone 1 already produces a public URL.
   - Done when: tests for AC-004.1–AC-004.3, AC-005.2–AC-005.5 and "markup in model output
     is shown literally" (NFR-001) pass with happy-dom; checks green.
 
-- [ ] T-006: Gemma's Breakdown and suggested replies (~1 h)
+- [~] T-006: Gemma's Breakdown and suggested replies (~1 h)
   - Requirements: REQ-006, REQ-007
   - Depends on: T-005
   - Scope: collapsed Breakdown section; suggestion chips that fill the input without
@@ -87,8 +87,8 @@ a deployed link, and Milestone 1 already produces a public URL.
   - Done when: tests for AC-006.1, AC-006.2, AC-007.1, AC-007.2 pass; manual check of
     AC-006.3 and AC-007.3 on 5 turns; checks green.
 
-- [ ] T-007: Gentle Fix (~1.5 h)
-  - Requirements: REQ-008 (incl. AC-008.6), REQ-002 (AC-002.8)
+- [~] T-007: Gentle Fix (~1.5 h)
+  - Requirements: REQ-008 (incl. AC-008.6), REQ-002 (AC-002.8), REQ-003 (AC-003.5)
   - Depends on: T-006
   - Scope: prompt rules for detecting mistakes and continuing the scene; Gentle Fix card
     (original, natural version, issue type, explanation) above the reply with an
