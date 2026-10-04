@@ -234,8 +234,8 @@ Considered and rejected for v1 (see product non-goals):
 
 ## Open questions
 - [ ] Q-1 … Q-3: see [product.md](product.md).
-- [ ] Q-4: Which open-source license for the repository? If unsure: MIT, because it's the
-  simplest permissive license and common for challenge entries.
+- [x] Q-4: Which open-source license for the repository? **Resolved 2026-10-04: MIT**
+  (`LICENSE`), the simplest permissive license and common for challenge entries.
 
 ## Assumptions
 - A-5: The hosted Gemma endpoint has a free tier large enough for 500 turns/day (to be
