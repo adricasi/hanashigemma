@@ -70,7 +70,7 @@ a deployed link, and Milestone 1 already produces a public URL.
     `docs/spec/progress.md`.
 
 ## Milestone 2: The learning experience (~4 h)
-- [ ] T-005: Furigana and romaji/English toggles (~1 h)
+- [x] T-005: Furigana and romaji/English toggles (~1 h)
   - Requirements: REQ-004, REQ-005, NFR-009 (toggle state, `lang="ja"`)
   - Depends on: T-002
   - Scope: ruby rendering from segments, global furigana toggle (on by default), per-turn

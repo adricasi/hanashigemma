@@ -20,6 +20,11 @@ const BACKEND_NAMES: Record<Backend, string> = {
   gemini: "hosted (Gemini API)",
 };
 
+/** AC-005.5: visitors of the hosted demo may not read Japanese yet; locally it's practice. */
+export function alwaysShowTranslationsFor(backend: Backend): boolean {
+  return backend === "gemini";
+}
+
 /** AC-010.5: the badge text, e.g. "Gemma · local (Ollama) · gemma4:e4b". */
 export function backendLabel(backend: Backend, model: string): string {
   return `Gemma · ${BACKEND_NAMES[backend]} · ${model}`;

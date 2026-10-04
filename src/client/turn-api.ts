@@ -13,9 +13,18 @@ export interface TurnBody {
   message: string | null;
 }
 
-/** Only the fields this view renders so far; later tasks render the rest of the reply. */
+export interface Segment {
+  text: string;
+  /** Hiragana reading; present on segments that contain kanji (REQ-004). */
+  reading?: string;
+}
+
+/** The reply fields this view renders; later tasks render the rest of the reply. */
 export interface GemmaTurn {
   jp: string;
+  segments: Segment[];
+  romaji: string;
+  en: string;
 }
 
 export type TurnResult =
@@ -41,6 +50,42 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
 }
 
+function parseSegment(value: unknown): Segment | null {
+  if (!isRecord(value) || typeof value.text !== "string") {
+    return null;
+  }
+  return typeof value.reading === "string"
+    ? { text: value.text, reading: value.reading }
+    : { text: value.text };
+}
+
+/** The server validated the reply; this only guards the shape the view relies on. */
+function parseGemmaTurn(data: unknown): GemmaTurn | null {
+  if (
+    !isRecord(data) ||
+    typeof data.jp !== "string" ||
+    typeof data.romaji !== "string" ||
+    typeof data.en !== "string" ||
+    !Array.isArray(data.segments)
+  ) {
+    return null;
+  }
+  const segments: Segment[] = [];
+  for (const value of data.segments) {
+    const segment = parseSegment(value);
+    if (segment === null) {
+      return null;
+    }
+    segments.push(segment);
+  }
+  return {
+    jp: data.jp,
+    segments,
+    romaji: data.romaji,
+    en: data.en,
+  };
+}
+
 export async function postTurn(fetchFn: FetchFn, body: TurnBody): Promise<TurnResult> {
   let response: Response;
   let data: unknown;
@@ -55,8 +100,9 @@ export async function postTurn(fetchFn: FetchFn, body: TurnBody): Promise<TurnRe
     return { ok: false, error: "network", message: UNREACHABLE, canRetry: true };
   }
 
-  if (response.ok && isRecord(data) && typeof data.jp === "string") {
-    return { ok: true, turn: { jp: data.jp } };
+  const turn = response.ok ? parseGemmaTurn(data) : null;
+  if (turn !== null) {
+    return { ok: true, turn };
   }
   if (isRecord(data) && typeof data.error === "string" && typeof data.message === "string") {
     // Bad requests won't succeed when repeated; everything else may (AC-003.3).
