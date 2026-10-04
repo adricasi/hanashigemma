@@ -14,6 +14,8 @@ export interface Config {
   ollamaUrl: string;
   geminiApiKey: string | null;
   port: number;
+  /** Interface to listen on; localhost by default so the LAN can't reach a local install. */
+  host: string;
   dailyTurnCap: number;
   perMinuteLimit: number;
 }
@@ -42,6 +44,10 @@ const envSchema = z
     OLLAMA_URL: z.url({ protocol: /^https?$/ }).default("http://127.0.0.1:11434"),
     GEMINI_API_KEY: z.string().trim().min(1, "must not be empty").optional(),
     PORT: positiveInt.max(65535).default(8080),
+    HOST: z
+      .string()
+      .regex(/^[A-Za-z0-9.:-]+$/, "must be an IP address or host name")
+      .default("127.0.0.1"),
     DAILY_TURN_CAP: positiveInt.default(500),
     PER_MINUTE_LIMIT: positiveInt.default(10),
   })
@@ -70,6 +76,7 @@ export function loadConfig(env: Record<string, string | undefined>): Config {
     ollamaUrl: parsed.OLLAMA_URL,
     geminiApiKey: parsed.GEMINI_API_KEY ?? null,
     port: parsed.PORT,
+    host: parsed.HOST,
     dailyTurnCap: parsed.DAILY_TURN_CAP,
     perMinuteLimit: parsed.PER_MINUTE_LIMIT,
   };

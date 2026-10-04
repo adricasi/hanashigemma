@@ -13,9 +13,29 @@
       <p id="backend-badge" class="badge"></p>
     </header>
     <main>
-      <h2>Choose a scene</h2>
-      <p id="status" role="status">Loading scenes…</p>
-      <ul id="scenarios" class="scenarios"></ul>
+      <section id="scene-picker" aria-labelledby="picker-heading">
+        <h2 id="picker-heading">Choose a scene</h2>
+        <p id="status" role="status">Loading scenes…</p>
+        <ul id="scenarios" class="scenarios"></ul>
+      </section>
+
+      <section id="conversation" class="conversation" aria-labelledby="scene-title" hidden>
+        <h2 id="scene-title"></h2>
+        <p id="scene-goal" class="scene-goal"></p>
+        <ol id="transcript" class="transcript" aria-live="polite"></ol>
+        <p id="waiting" class="waiting" role="status" hidden>Gemma is thinking…</p>
+        <div id="turn-error" class="turn-error" role="alert" hidden>
+          <p id="turn-error-text"></p>
+          <button type="button" id="retry-button" class="secondary" hidden>Try again</button>
+        </div>
+        <form id="composer" class="composer">
+          <label for="message-input">Your reply (Enter to send, Shift+Enter for a new line)</label>
+          <div class="composer-row">
+            <textarea id="message-input" rows="2" lang="ja" autocomplete="off"></textarea>
+            <button type="submit" id="send-button">Send</button>
+          </div>
+        </form>
+      </section>
     </main>
   </body>
 </html>

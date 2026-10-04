@@ -3,6 +3,7 @@ import { fileURLToPath } from "node:url";
 import { serve } from "@hono/node-server";
 
 import { ConfigError, loadConfig, type Config } from "./config.js";
+import { createOllamaAdapter } from "./model/ollama.js";
 import { createApp } from "./server/app.js";
 
 function readConfig(): Config | null {
@@ -23,11 +24,13 @@ if (config === null) {
   process.exitCode = 1;
 } else {
   const staticRoot = fileURLToPath(new URL("./public/", import.meta.url));
-  const app = createApp({ config, staticRoot });
-  serve({ fetch: app.fetch, port: config.port }, (info) => {
+  const adapter = createOllamaAdapter({ baseUrl: config.ollamaUrl, model: config.model });
+  const app = createApp({ config, staticRoot, adapter });
+  serve({ fetch: app.fetch, port: config.port, hostname: config.host }, (info) => {
     console.log(
       JSON.stringify({
         message: "server started",
+        host: config.host,
         port: info.port,
         backend: config.backend,
         model: config.model,

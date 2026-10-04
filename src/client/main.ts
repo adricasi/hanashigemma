@@ -1,4 +1,5 @@
 import { backendLabel, parseConfigView, type ScenarioView } from "./config.js";
+import { mountConversation } from "./conversation.js";
 
 // NFR-001: every piece of text goes through textContent, never innerHTML.
 
@@ -17,15 +18,24 @@ function textElement(tag: string, className: string, text: string): HTMLElement 
   return element;
 }
 
+function startScene(scenario: ScenarioView): void {
+  requireElement("scene-picker").hidden = true;
+  mountConversation({ root: document, scenario, fetchFn: fetch.bind(window) }).start();
+}
+
 function scenarioItem(scenario: ScenarioView): HTMLLIElement {
   const item = document.createElement("li");
-  item.className = "scenario";
-  item.dataset.scenarioId = scenario.id;
-  item.append(
-    textElement("h3", "scenario-title", scenario.title),
-    textElement("p", "scenario-goal", `Your goal: ${scenario.goal}`),
-    textElement("p", "scenario-role", `Gemma plays: ${scenario.role}`),
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "scenario";
+  button.dataset.scenarioId = scenario.id;
+  button.append(
+    textElement("span", "scenario-title", scenario.title),
+    textElement("span", "scenario-goal", `Your goal: ${scenario.goal}`),
+    textElement("span", "scenario-role", `Gemma plays: ${scenario.role}`),
   );
+  button.addEventListener("click", () => startScene(scenario));
+  item.append(button);
   return item;
 }
 

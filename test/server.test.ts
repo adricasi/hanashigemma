@@ -6,6 +6,7 @@ import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
 import { loadConfig } from "../src/config.js";
 import { createApp } from "../src/server/app.js";
+import { fakeAdapter } from "./fixtures.js";
 
 const CSP_DIRECTIVES = [
   "default-src 'self'",
@@ -29,7 +30,7 @@ afterAll(() => {
 });
 
 function app(env: Record<string, string> = {}) {
-  return createApp({ config: loadConfig(env), staticRoot });
+  return createApp({ config: loadConfig(env), staticRoot, adapter: fakeAdapter([]).adapter });
 }
 
 describe("GET /healthz", () => {
@@ -55,6 +56,8 @@ describe("GET /api/config", () => {
       "Asking for directions in Kyoto",
     ]);
     for (const scenario of body.scenarios) {
+      // Only the public fields: the prompt's opening instruction stays on the server.
+      expect(Object.keys(scenario).sort()).toEqual(["goal", "id", "role", "title"]);
       expect(scenario.id).toMatch(/^[a-z]+(-[a-z]+)*$/);
       expect(scenario.goal.trim()).not.toBe("");
       expect(scenario.role.trim()).not.toBe("");

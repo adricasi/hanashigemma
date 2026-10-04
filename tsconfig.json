@@ -18,5 +18,5 @@
     "outDir": "dist"
   },
   "include": ["src", "test", "*.ts"],
-  "exclude": ["src/client"]
+  "exclude": ["src/client", "test/client"]
 }
