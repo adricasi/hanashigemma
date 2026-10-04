@@ -236,6 +236,11 @@ textarea:focus-visible {
   margin-right: 0.75rem;
 }
 
+/* Keep the kanji together when the reading is wider (e.g. 注文 / ちゅうもん). */
+.turn-text ruby {
+  ruby-align: center;
+}
+
 .turn-text ruby rt {
   color: var(--muted);
   font-size: 0.55em;
