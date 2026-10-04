@@ -108,7 +108,33 @@ function relevantFix(fix: Reply["fix"], message: string | null): Reply["fix"] {
   const aboutThisMessage =
     original !== "" && sent !== "" && (original.includes(sent) || sent.includes(original));
   const changesLetters = letters(fix.natural) !== original;
-  return aboutThisMessage && changesLetters ? fix : null;
+  return aboutThisMessage && changesLetters && !onlyAddsKanji(sent, letters(fix.natural))
+    ? fix
+    : null;
+}
+
+const KANJI = /[\u3400-\u4dbf\u4e00-\u9fff]/u;
+const ALL_KANJI = /[\u3400-\u4dbf\u4e00-\u9fff]/gu;
+
+/**
+ * True when the learner wrote kana only and the "natural" version is the same sentence with
+ * some words in kanji (おかいけい → お会計): writing in kana is not a mistake (AC-008.3).
+ * Its kana, read in order, then all appear in what the learner wrote; a real fix such as
+ * が → で adds kana the learner didn't write, so it is kept.
+ */
+function onlyAddsKanji(sent: string, natural: string): boolean {
+  if (KANJI.test(sent) || !KANJI.test(natural)) {
+    return false;
+  }
+  let position = 0;
+  for (const character of natural.replace(ALL_KANJI, "")) {
+    position = sent.indexOf(character, position);
+    if (position === -1) {
+      return false;
+    }
+    position += 1;
+  }
+  return true;
 }
 
 /** Runs one POST /api/turn: validate the request, call the model, validate, retry once. */

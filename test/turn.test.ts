@@ -266,6 +266,19 @@ describe("POST /api/turn", () => {
       });
     });
 
+    it.each([
+      ["おかいけいをおねがいします。", "お会計をお願いします。"],
+      ["かまくらまで、かたみちでおねがいします。", "鎌倉まで、片道でお願いします。"],
+    ])("AC-008.3: drops a 'fix' that only writes %s with kanji", async (message, natural) => {
+      expect(await fixFor(message, message, natural)).toBeNull();
+    });
+
+    it("AC-008.1: keeps a real particle fix even when the natural version adds kanji", async () => {
+      expect(
+        await fixFor("カードがはらえますか？", "カードがはらえますか？", "カードで払えますか？"),
+      ).toMatchObject({ natural: "カードで払えますか？" });
+    });
+
     it("AC-008.6: keeps the Japanese version of an English message", async () => {
       expect(
         await fixFor(
