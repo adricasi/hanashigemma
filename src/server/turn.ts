@@ -86,6 +86,31 @@ export function rejectTurn(config: TurnContext["config"], message: string): Turn
   return { status: 400, body: { error: "invalid_request", message } };
 }
 
+/** Letters only: ignores spacing, punctuation and full/half-width differences. */
+function letters(text: string): string {
+  return text
+    .normalize("NFKC")
+    .toLowerCase()
+    .replace(/[\s\p{P}\p{S}]/gu, "");
+}
+
+/**
+ * The model sometimes "corrects" an earlier message or only swaps punctuation. A fix is kept
+ * only if it is about the message just sent (AC-008.1) and changes more than punctuation
+ * (AC-008.3). Before the learner has written anything there is nothing to correct.
+ */
+function relevantFix(fix: Reply["fix"], message: string | null): Reply["fix"] {
+  if (fix === null || message === null) {
+    return null;
+  }
+  const sent = letters(message);
+  const original = letters(fix.original);
+  const aboutThisMessage =
+    original !== "" && sent !== "" && (original.includes(sent) || sent.includes(original));
+  const changesLetters = letters(fix.natural) !== original;
+  return aboutThisMessage && changesLetters ? fix : null;
+}
+
 /** Runs one POST /api/turn: validate the request, call the model, validate, retry once. */
 export async function handleTurn(
   context: TurnContext,
@@ -146,9 +171,10 @@ export async function handleTurn(
     const validation = validateReply(raw, { allowMissingReadings: attempt === MAX_ATTEMPTS });
     if (validation.ok) {
       record(scenario.id, attempt, "passed", null);
-      // AC-008.3: nothing to correct before the learner has written anything.
-      const reply =
-        request.message === null ? { ...validation.reply, fix: null } : validation.reply;
+      const reply = {
+        ...validation.reply,
+        fix: relevantFix(validation.reply.fix, request.message),
+      };
       return { status: 200, body: reply };
     }
     messages = retryMessages(messages, raw, validation.error);

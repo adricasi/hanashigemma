@@ -227,6 +227,56 @@ describe("POST /api/turn", () => {
     expect(response.status).toBe(502);
   });
 
+  describe("Gentle Fix is about the message just sent", () => {
+    const earlier = [
+      { role: "gemma", text: "いらっしゃいませ。" },
+      { role: "learner", text: "おいしいです！" },
+      { role: "gemma", text: "ありがとうございます。" },
+    ];
+    const withFix = (original: string, natural: string) =>
+      JSON.stringify({
+        ...validReply(),
+        fix: { original, natural, issue: "particle", explanation: "A note." },
+      });
+    async function fixFor(message: string, original: string, natural: string) {
+      const { adapter } = fakeAdapter([withFix(original, natural)]);
+      const response = await postTurn(app(adapter), {
+        scenarioId: "izakaya-ramen",
+        history: earlier,
+        message,
+      });
+      return ((await response.json()) as { fix: unknown }).fix;
+    }
+
+    it("AC-008.1: drops a fix that corrects an earlier message", async () => {
+      expect(
+        await fixFor("おかいけいをおねがいします。", "おいしいです！", "おいしいです。"),
+      ).toBeNull();
+    });
+
+    it("AC-008.3: drops a fix that only changes punctuation or spacing", async () => {
+      expect(await fixFor("おいしいです！", "おいしいです！", "おいしいです。")).toBeNull();
+    });
+
+    it("AC-008.1: keeps a real fix of the current message, ignoring punctuation differences", async () => {
+      expect(
+        await fixFor("ラーメンがください", "ラーメンがください。", "ラーメンをください。"),
+      ).toMatchObject({
+        natural: "ラーメンをください。",
+      });
+    });
+
+    it("AC-008.6: keeps the Japanese version of an English message", async () => {
+      expect(
+        await fixFor(
+          "I'd like a ramen, please.",
+          "I'd like a ramen, please",
+          "ラーメンをください。",
+        ),
+      ).toMatchObject({ natural: "ラーメンをください。" });
+    });
+  });
+
   it("AC-003.3: answers a friendly error after a second invalid output", async () => {
     const { adapter, requests } = fakeAdapter(["nope", "still nope"]);
 
