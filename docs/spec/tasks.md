@@ -24,7 +24,7 @@ a deployed link, and Milestone 1 already produces a public URL.
     gemma4:e4b "こんにちは"` answers; the key and project id are ready (not in the repo).
 
 ## Milestone 1: Walking skeleton — local and public (~4 h)
-- [ ] T-001: Server skeleton with config, health and scenario list (~1 h)
+- [x] T-001: Server skeleton with config, health and scenario list (~1 h)
   - Requirements: REQ-001 (AC-001.1), REQ-010 (AC-010.1, AC-010.2, AC-010.5), NFR-001
     (headers), NFR-003, NFR-007
   - Depends on: T-000
