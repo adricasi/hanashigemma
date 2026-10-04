@@ -74,8 +74,9 @@ a deployed link, and Milestone 1 already produces a public URL.
   - Requirements: REQ-004, REQ-005, NFR-009 (toggle state, `lang="ja"`)
   - Depends on: T-002
   - Scope: ruby rendering from segments, global furigana toggle (on by default), per-turn
-    "Show romaji & English" and global "Always show"; text-only rendering helpers.
-  - Done when: tests for AC-004.1–AC-004.3, AC-005.1–AC-005.3 and "markup in model output
+    "Show romaji & English" and global "Always show" (on by default on the hosted backend,
+    AC-005.5); text-only rendering helpers.
+  - Done when: tests for AC-004.1–AC-004.3, AC-005.2–AC-005.5 and "markup in model output
     is shown literally" (NFR-001) pass with happy-dom; checks green.
 
 - [ ] T-006: Gemma's Breakdown and suggested replies (~1 h)
@@ -87,12 +88,13 @@ a deployed link, and Milestone 1 already produces a public URL.
     AC-006.3 and AC-007.3 on 5 turns; checks green.
 
 - [ ] T-007: Gentle Fix (~1.5 h)
-  - Requirements: REQ-008
+  - Requirements: REQ-008 (incl. AC-008.6), REQ-002 (AC-002.8)
   - Depends on: T-006
   - Scope: prompt rules for detecting mistakes and continuing the scene; Gentle Fix card
     (original, natural version, issue type, explanation) above the reply with an
-    encouraging fixed label; seed file with the 10 mistaken sentences.
-  - Done when: tests for AC-008.1–AC-008.4 (contract) pass; manual run of the 10 seeded
+    encouraging fixed label; English or romaji input gets a fix with the Japanese version
+    (AC-008.6); seed file with the 10 mistaken sentences.
+  - Done when: tests for AC-008.1–AC-008.4 and AC-008.6 (contract) pass; manual run of the 10 seeded
     mistakes gives ≥ 8 correct fixes (AC-008.5), recorded in `progress.md`; checks green.
 
 - [ ] T-008: Scene flow and About panel (~0.5 h)

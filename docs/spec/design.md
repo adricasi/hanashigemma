@@ -252,10 +252,10 @@ Estimate, not a quote:
 | REQ-002 | Components (Turn handler, Prompt builder); Data model (request limits); Interfaces |
 | REQ-003 | Components (Reply validator); Data model (Reply); Reliability (retry) |
 | REQ-004 | Data model (segments, readings); Components (Web UI) |
-| REQ-005 | Components (Web UI) |
+| REQ-005 | Components (Web UI; "Always show romaji & English" defaults from the backend in `/api/config`, AC-005.5) |
 | REQ-006 | Data model (breakdown cross-check); Prompt builder |
 | REQ-007 | Data model (suggestions); Web UI |
-| REQ-008 | Data model (`fix`); Prompt builder; Web UI |
+| REQ-008 | Data model (`fix`); Prompt builder (incl. English/romaji input → fix with the Japanese version, AC-008.6); Web UI |
 | REQ-009 | Web UI (client-side reset) |
 | REQ-010 | Components (Model backend adapter, Config loader); Interfaces (configuration) |
 | REQ-011 | Components (Rate limiter); Interfaces (429/503); Security (quota abuse) |

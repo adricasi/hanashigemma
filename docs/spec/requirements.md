@@ -53,8 +53,12 @@ scripted runs and hand review defined in the product success metrics).
   - AC-002.6: WHEN Gemma replies in role THE SYSTEM SHALL use beginner-level Japanese
     (JLPT N5–N4 vocabulary) in desu/masu form, except fixed service phrases of the role
     (e.g. いらっしゃいませ). *(Evaluation.)*
-  - AC-002.7: IF the learner writes off-topic or in English THEN THE SYSTEM SHALL stay in
-    role and gently steer back to the scenario in Japanese. *(Evaluation.)*
+  - ~~AC-002.7: IF the learner writes off-topic or in English THEN THE SYSTEM SHALL stay in
+    role and gently steer back to the scenario in Japanese.~~ *Deprecated 2026-10-04:
+    split into AC-002.8 (off-topic) and AC-008.6 (English or romaji), so visitors who
+    don't know Japanese are shown how to say it.*
+  - AC-002.8: IF the learner writes off-topic THEN THE SYSTEM SHALL stay in role and gently
+    steer back to the scenario in Japanese. *(Evaluation.)*
 
 ### REQ-003: Structured, validated replies
 - Story: As a learner, I want every Gemma turn to arrive in the same predictable layout,
@@ -93,8 +97,13 @@ scripted runs and hand review defined in the product success metrics).
 - Priority: Must
 - Goals: G-2
 - Acceptance criteria:
-  - AC-005.1: WHEN a Gemma turn is shown THE SYSTEM SHALL hide its romaji and English
-    translation.
+  - ~~AC-005.1: WHEN a Gemma turn is shown THE SYSTEM SHALL hide its romaji and English
+    translation.~~ *Deprecated 2026-10-04: replaced by AC-005.4 and AC-005.5 so the public
+    demo is usable by visitors who don't read Japanese.*
+  - AC-005.4: WHEN a Gemma turn is shown WHILE "Always show romaji & English" is off THE
+    SYSTEM SHALL hide its romaji and English translation.
+  - AC-005.5: WHEN the app loads THE SYSTEM SHALL switch "Always show romaji & English" off
+    with the local backend (reading practice) and on with the hosted backend (public demo).
   - AC-005.2: WHEN the learner activates "Show romaji & English" on a turn THE SYSTEM
     SHALL reveal both for that turn only, and hide them again on a second activation.
   - AC-005.3: WHEN the learner switches on the global "Always show romaji & English"
@@ -148,6 +157,10 @@ scripted runs and hand review defined in the product success metrics).
     the label; evaluation for the explanation.)*
   - AC-008.5: WHEN the 10 seeded mistakes of the evaluation set are sent THE SYSTEM SHALL
     produce a fix naming the actual issue for at least 8 of them. *(Evaluation.)*
+  - AC-008.6: IF the learner writes in English or in romaji THEN THE SYSTEM SHALL show a
+    Gentle Fix whose natural version is the Japanese way to say it (issue type "other"),
+    and continue the scene in the same turn, replying to what the learner meant.
+    *(Contract for the fix shape; evaluation for the content.)*
 
 ### REQ-009: Restart or switch scenario
 - Story: As a learner, I want to start over or try another scene, so that I can repeat a
