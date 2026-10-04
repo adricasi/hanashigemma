@@ -1,4 +1,9 @@
-import { parseConfigView, type ScenarioView } from "./config.js";
+import {
+  alwaysShowTranslationsFor,
+  parseConfigView,
+  type ConfigView,
+  type ScenarioView,
+} from "./config.js";
 import { mountConversation } from "./conversation.js";
 import { renderBackend } from "./header.js";
 
@@ -19,12 +24,17 @@ function textElement(tag: string, className: string, text: string): HTMLElement 
   return element;
 }
 
-function startScene(scenario: ScenarioView): void {
+function startScene(scenario: ScenarioView, config: ConfigView): void {
   requireElement("scene-picker").hidden = true;
-  mountConversation({ root: document, scenario, fetchFn: fetch.bind(window) }).start();
+  mountConversation({
+    root: document,
+    scenario,
+    fetchFn: fetch.bind(window),
+    alwaysShowTranslations: alwaysShowTranslationsFor(config.backend),
+  }).start();
 }
 
-function scenarioItem(scenario: ScenarioView): HTMLLIElement {
+function scenarioItem(scenario: ScenarioView, config: ConfigView): HTMLLIElement {
   const item = document.createElement("li");
   const button = document.createElement("button");
   button.type = "button";
@@ -35,7 +45,7 @@ function scenarioItem(scenario: ScenarioView): HTMLLIElement {
     textElement("span", "scenario-goal", `Your goal: ${scenario.goal}`),
     textElement("span", "scenario-role", `Gemma plays: ${scenario.role}`),
   );
-  button.addEventListener("click", () => startScene(scenario));
+  button.addEventListener("click", () => startScene(scenario, config));
   item.append(button);
   return item;
 }
@@ -51,7 +61,7 @@ async function start(): Promise<void> {
     }
     const config = parseConfigView(await response.json());
     renderBackend(document, config);
-    list.replaceChildren(...config.scenarios.map(scenarioItem));
+    list.replaceChildren(...config.scenarios.map((scenario) => scenarioItem(scenario, config)));
     status.textContent = "";
     status.hidden = true;
   } catch (error) {

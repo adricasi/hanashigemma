@@ -1,19 +1,26 @@
 import type { ScenarioView } from "./config.js";
+import { buildGemmaTurn, HIDE_TRANSLATION, SHOW_TRANSLATION } from "./render-turn.js";
 import {
   checkDraft,
   MAX_MESSAGE_LENGTH,
   postTurn,
   type FetchFn,
+  type GemmaTurn,
   type HistoryEntry,
   type TurnBody,
 } from "./turn-api.js";
 
 // NFR-001: every piece of text goes through textContent, never innerHTML.
 
+/** Hiragana, katakana and CJK ideographs. */
+const JAPANESE_SCRIPT = /[぀-ヿ㐀-䶿一-鿿]/;
+
 export interface ConversationOptions {
   root: Document;
   scenario: ScenarioView;
   fetchFn: FetchFn;
+  /** AC-005.5: on for the hosted demo, off locally (reading practice). */
+  alwaysShowTranslations?: boolean;
 }
 
 export interface Conversation {
@@ -29,7 +36,12 @@ function required<T extends HTMLElement>(root: Document, id: string): T {
   return element as T;
 }
 
-export function mountConversation({ root, scenario, fetchFn }: ConversationOptions): Conversation {
+export function mountConversation({
+  root,
+  scenario,
+  fetchFn,
+  alwaysShowTranslations = false,
+}: ConversationOptions): Conversation {
   const section = required(root, "conversation");
   const title = required(root, "scene-title");
   const goal = required(root, "scene-goal");
@@ -41,22 +53,68 @@ export function mountConversation({ root, scenario, fetchFn }: ConversationOptio
   const composer = required<HTMLFormElement>(root, "composer");
   const input = required<HTMLTextAreaElement>(root, "message-input");
   const sendButton = required<HTMLButtonElement>(root, "send-button");
+  const furiganaToggle = required<HTMLInputElement>(root, "furigana-toggle");
+  const translationToggle = required<HTMLInputElement>(root, "translation-toggle");
 
   const history: HistoryEntry[] = [];
   let pending = false;
   /** AC-001.2: the learner can only reply once Gemma's opening line has arrived. */
   let started = false;
   let lastBody: TurnBody | null = null;
+  let gemmaTurns = 0;
 
-  function appendLine(speaker: "learner" | "gemma", text: string): void {
+  // AC-004.3: furigana starts on; AC-005.5: "Always show" starts from the backend.
+  furiganaToggle.checked = true;
+  translationToggle.checked = alwaysShowTranslations;
+
+  /** AC-004.2: one switch for every reading in the conversation. */
+  function applyFurigana(): void {
+    for (const reading of transcript.querySelectorAll<HTMLElement>("rt")) {
+      reading.hidden = !furiganaToggle.checked;
+    }
+  }
+
+  /** AC-005.2–AC-005.4: a turn shows its translation if it was opened or "Always show" is on. */
+  function applyTranslation(item: Element): void {
+    const button = item.querySelector<HTMLButtonElement>("button.translation-button");
+    const panel = item.querySelector<HTMLElement>(".turn-translation");
+    if (button === null || panel === null) {
+      return;
+    }
+    const opened = button.getAttribute("aria-expanded") === "true";
+    panel.hidden = !(opened || translationToggle.checked);
+    // With "Always show" on, the per-turn button has nothing to do.
+    button.hidden = translationToggle.checked;
+  }
+
+  function appendGemmaTurn(turn: GemmaTurn): void {
+    gemmaTurns += 1;
+    const item = buildGemmaTurn(root, turn, `${scenario.id}-${gemmaTurns}`);
+    const button = item.querySelector<HTMLButtonElement>("button.translation-button");
+    button?.addEventListener("click", () => {
+      const opened = button.getAttribute("aria-expanded") !== "true";
+      button.setAttribute("aria-expanded", String(opened));
+      button.textContent = opened ? HIDE_TRANSLATION : SHOW_TRANSLATION;
+      applyTranslation(item);
+    });
+    transcript.append(item);
+    applyTranslation(item);
+    applyFurigana();
+  }
+
+  function appendLearnerLine(text: string): void {
     const item = root.createElement("li");
-    item.className = `turn turn-${speaker}`;
+    item.className = "turn turn-learner";
     const label = root.createElement("span");
     label.className = "turn-speaker";
-    label.textContent = speaker === "gemma" ? "Gemma" : "You";
+    label.textContent = "You";
     const line = root.createElement("p");
     line.className = "turn-text";
-    line.lang = "ja";
+    // NFR-009: learners may also write English or romaji (AC-008.6), which script detection
+    // can't tell apart, so only real Japanese is marked; the rest inherits the page language.
+    if (JAPANESE_SCRIPT.test(text)) {
+      line.lang = "ja";
+    }
     line.textContent = text;
     item.append(label, line);
     transcript.append(item);
@@ -103,14 +161,14 @@ export function mountConversation({ root, scenario, fetchFn }: ConversationOptio
     }
     if (body.message !== null) {
       history.push({ role: "learner", text: body.message });
-      appendLine("learner", body.message);
+      appendLearnerLine(body.message);
       // The input was read-only during the turn, so it still holds exactly what was sent.
       input.value = "";
     }
     started = true;
     updateControls();
     history.push({ role: "gemma", text: result.turn.jp });
-    appendLine("gemma", result.turn.jp);
+    appendGemmaTurn(result.turn);
     lastBody = null;
     input.focus();
   }
@@ -141,6 +199,12 @@ export function mountConversation({ root, scenario, fetchFn }: ConversationOptio
     if (event.key === "Enter" && !event.shiftKey && !confirmsIme) {
       event.preventDefault();
       send();
+    }
+  });
+  furiganaToggle.addEventListener("change", applyFurigana);
+  translationToggle.addEventListener("change", () => {
+    for (const item of transcript.querySelectorAll(".turn-gemma")) {
+      applyTranslation(item);
     }
   });
   retryButton.addEventListener("click", () => {

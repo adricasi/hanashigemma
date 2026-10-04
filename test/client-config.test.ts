@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { backendLabel, parseConfigView } from "../src/client/config.js";
+import { alwaysShowTranslationsFor, backendLabel, parseConfigView } from "../src/client/config.js";
 
 describe("backendLabel", () => {
   it("AC-010.5: names the local backend and the model", () => {
@@ -33,5 +33,12 @@ describe("parseConfigView", () => {
     ["scenario missing title", { ...valid, scenarios: [{ id: "x", goal: "g", role: "r" }] }],
   ])("rejects a malformed response (%s)", (_name, input) => {
     expect(() => parseConfigView(input)).toThrow("Unexpected /api/config response");
+  });
+});
+
+describe("alwaysShowTranslationsFor", () => {
+  it("AC-005.5: starts romaji & English on for the hosted demo and off locally", () => {
+    expect(alwaysShowTranslationsFor("gemini")).toBe(true);
+    expect(alwaysShowTranslationsFor("ollama")).toBe(false);
   });
 });

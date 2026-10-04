@@ -62,7 +62,8 @@ explanations on demand, and corrections that don't feel like failure.
 - Gentle Fix: when the learner's Japanese is wrong or unnatural, Gemma shows the natural
   phrasing and explains the particle or politeness choice, then continues the scene.
 - Learner input typed in Japanese (kana/kanji via the OS input method); romaji input is
-  accepted on a best-effort basis [ASSUMPTION A-3].
+  accepted on a best-effort basis [ASSUMPTION A-3]; English or romaji input gets a Gentle
+  Fix showing the Japanese version (AC-008.6), so visitors without Japanese can play.
 - Two ways to run Gemma behind one interface: local Ollama (default, offline) and a hosted
   Gemma endpoint used by the public demo.
 - Public demo on Google Cloud (scale-to-zero web service), plus a README with local

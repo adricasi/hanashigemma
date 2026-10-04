@@ -283,6 +283,152 @@ describe("conversation view", () => {
     });
   });
 
+  describe("display options", () => {
+    function withReading(jp: string) {
+      return {
+        ...reply(jp),
+        segments: [{ text: jp }, { text: "水", reading: "みず" }],
+        romaji: "romaji",
+        en: "English",
+      };
+    }
+
+    async function conversationWith(alwaysShowTranslations: boolean) {
+      const api = controlledFetch();
+      mountConversation({
+        root: document,
+        scenario,
+        fetchFn: api.fetchFn,
+        alwaysShowTranslations,
+      }).start();
+      await api.respond(jsonResponse(200, withReading("いらっしゃいませ。")));
+      return api;
+    }
+
+    async function addTurn(api: ReturnType<typeof controlledFetch>) {
+      typeAndSend("おねがいします");
+      await api.respond(jsonResponse(200, withReading("はい。")));
+    }
+
+    const readings = () => [...element("transcript").querySelectorAll("rt")] as HTMLElement[];
+    const panels = () =>
+      [...element("transcript").querySelectorAll(".turn-translation")] as HTMLElement[];
+    const toggle = (id: string) => element<HTMLInputElement>(id);
+    function flip(id: string) {
+      toggle(id).click();
+    }
+
+    it("AC-004.3: starts with furigana switched on", async () => {
+      await conversationWith(false);
+
+      expect(toggle("furigana-toggle").checked).toBe(true);
+      expect(readings().every((rt) => !rt.hidden)).toBe(true);
+    });
+
+    it("AC-004.2: hides every reading when furigana is switched off, new turns included", async () => {
+      const api = await conversationWith(false);
+
+      flip("furigana-toggle");
+      await addTurn(api);
+
+      expect(readings()).toHaveLength(2);
+      expect(readings().every((rt) => rt.hidden)).toBe(true);
+
+      flip("furigana-toggle");
+      expect(readings().every((rt) => !rt.hidden)).toBe(true);
+    });
+
+    it("AC-005.5: hides romaji and English by default on the local backend", async () => {
+      await conversationWith(false);
+
+      expect(toggle("translation-toggle").checked).toBe(false);
+      expect(panels().every((panel) => panel.hidden)).toBe(true);
+    });
+
+    it("AC-005.5: shows romaji and English by default on the hosted demo", async () => {
+      await conversationWith(true);
+
+      expect(toggle("translation-toggle").checked).toBe(true);
+      expect(panels().every((panel) => !panel.hidden)).toBe(true);
+    });
+
+    it("AC-005.2: reveals one turn's romaji and English, and hides them again", async () => {
+      const api = await conversationWith(false);
+      await addTurn(api);
+      const button = element("transcript").querySelectorAll<HTMLButtonElement>(
+        "button.translation-button",
+      )[0]!;
+
+      button.click();
+      expect(panels().map((panel) => panel.hidden)).toEqual([false, true]);
+      expect(button.getAttribute("aria-expanded")).toBe("true");
+      expect(button.textContent).toBe("Hide romaji & English");
+
+      button.click();
+      expect(panels().map((panel) => panel.hidden)).toEqual([true, true]);
+      expect(button.getAttribute("aria-expanded")).toBe("false");
+    });
+
+    it("AC-005.3: 'Always show' reveals every turn, new ones included, until switched off", async () => {
+      const api = await conversationWith(false);
+
+      flip("translation-toggle");
+      await addTurn(api);
+      expect(panels().every((panel) => !panel.hidden)).toBe(true);
+
+      flip("translation-toggle");
+      expect(panels().every((panel) => panel.hidden)).toBe(true);
+    });
+
+    it("AC-005.3: hides the per-turn buttons while 'Always show' is on, and keeps each turn's choice", async () => {
+      const api = await conversationWith(false);
+      await addTurn(api);
+      const buttons = () => [
+        ...element("transcript").querySelectorAll<HTMLButtonElement>("button.translation-button"),
+      ];
+      buttons()[0]!.click();
+
+      flip("translation-toggle");
+      expect(buttons().every((button) => button.hidden)).toBe(true);
+
+      flip("translation-toggle");
+      expect(panels().map((panel) => panel.hidden)).toEqual([false, true]);
+      expect(buttons()[0]!.hidden).toBe(false);
+      expect(buttons()[0]!.getAttribute("aria-expanded")).toBe("true");
+    });
+
+    it("NFR-009: the switches are labelled checkboxes, so screen readers hear on/off", () => {
+      for (const id of ["furigana-toggle", "translation-toggle"]) {
+        const input = toggle(id);
+        expect(input.type).toBe("checkbox");
+        expect(input.labels?.[0]?.textContent?.trim()).toBeTruthy();
+      }
+    });
+  });
+
+  it("NFR-009: marks a learner line as Japanese only when it is written in Japanese", async () => {
+    const { respond } = await startedConversation();
+    typeAndSend("すみません");
+    await respond(jsonResponse(200, reply("はい。")));
+    typeAndSend("I want ramen");
+    await respond(jsonResponse(200, reply("はい。")));
+
+    const learnerLines = [...element("transcript").querySelectorAll(".turn-learner .turn-text")];
+    expect(learnerLines.map((line) => line.getAttribute("lang"))).toEqual(["ja", null]);
+  });
+
+  it("REQ-003: never shows a 200 reply that lacks the fields the view needs", async () => {
+    const api = controlledFetch();
+    mountConversation({ root: document, scenario, fetchFn: api.fetchFn }).start();
+
+    await api.respond(
+      jsonResponse(200, { jp: "はい", segments: [{ text: 1 }], romaji: "", en: "" }),
+    );
+
+    expect(transcriptLines()).toEqual([]);
+    expect(element("turn-error").hidden).toBe(false);
+  });
+
   it("NFR-001: shows markup in model output as literal text", async () => {
     await startedConversation('<img src="x" onerror="alert(1)">');
 

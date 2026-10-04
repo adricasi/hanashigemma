@@ -221,3 +221,47 @@ textarea:focus-visible {
   color: var(--muted);
   font-size: 0.875rem;
 }
+
+.display-options {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem 0.5rem;
+  margin: 0.5rem 0;
+  color: var(--muted);
+  font-size: 0.875rem;
+}
+
+.display-options label {
+  margin-right: 0.75rem;
+}
+
+.turn-text ruby rt {
+  color: var(--muted);
+  font-size: 0.55em;
+}
+
+.translation-button {
+  margin-top: 0.25rem;
+  padding: 0.125rem 0.5rem;
+  font-size: 0.8125rem;
+}
+
+.turn-translation {
+  margin-top: 0.25rem;
+  padding-top: 0.25rem;
+  border-top: 1px dashed var(--border);
+}
+
+.turn-romaji,
+.turn-en {
+  margin: 0;
+}
+
+.turn-romaji {
+  font-style: italic;
+}
+
+.turn-en {
+  color: var(--muted);
+}

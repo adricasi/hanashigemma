@@ -26,6 +26,12 @@
       <section id="conversation" class="conversation" aria-labelledby="scene-title" hidden>
         <h2 id="scene-title"></h2>
         <p id="scene-goal" class="scene-goal"></p>
+        <div class="display-options" role="group" aria-label="Display options">
+          <input type="checkbox" id="furigana-toggle" checked />
+          <label for="furigana-toggle">Furigana</label>
+          <input type="checkbox" id="translation-toggle" />
+          <label for="translation-toggle">Always show romaji &amp; English</label>
+        </div>
         <ol id="transcript" class="transcript" aria-live="polite"></ol>
         <p id="waiting" class="waiting" role="status" hidden>Gemma is thinking…</p>
         <div id="turn-error" class="turn-error" role="alert" hidden>
