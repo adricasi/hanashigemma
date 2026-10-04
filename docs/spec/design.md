@@ -120,6 +120,8 @@ the learner's text in the input.
 `GEMMA_MODEL` (default `gemma4:e4b` for Ollama, `gemma-4-26b-a4b-it` for Gemini — see D-3);
 `OLLAMA_URL` (default `http://127.0.0.1:11434`); `GEMINI_API_KEY` (required when
 `GEMMA_BACKEND=gemini`, injected from Secret Manager); `PORT` (default 8080);
+`HOST` (default `127.0.0.1`, so a local install is not reachable from the LAN; the
+container sets `0.0.0.0`);
 `DAILY_TURN_CAP` (default 500); `PER_MINUTE_LIMIT` (default 10).
 
 **Model call contract:** the prompt asks for JSON only, matching the schema, with a
@@ -160,9 +162,10 @@ prompt ("Your previous answer was invalid because …").
   | Threat | Mitigation |
   |---|---|
   | XSS through model or learner text | Render only with `textContent` / created elements, never `innerHTML`; CSP `default-src 'self'; script-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'` (NFR-001) |
-  | Prompt injection by the learner ("ignore your role…") | Only affects their own session; output is still schema-validated and rendered as text; the model has no tools or data access |
+  | Prompt injection by the learner ("ignore your role…") | Only affects their own session; output is still schema-validated and rendered as text; the model has no tools or data access. **Accepted risk:** the browser holds the history, so a caller can forge earlier Gemma turns; the server checks history shape (starts and ends with Gemma, learner entries ≤ 200 chars) but cannot prove authorship without signing turns |
   | Quota exhaustion / cost abuse of the demo | Per-client per-minute limit, daily cap, max 1 instance, request size limits (REQ-011) |
-  | Oversized requests | Body ≤ 32 KB, message ≤ 200 chars, bounded history |
+  | Oversized requests | Body ≤ 32 KB (binds before the per-entry history limits in a long scene), message ≤ 200 chars, bounded history, bounded reply fields and retry prompt, `num_predict` cap on Ollama; model calls are aborted when the client disconnects; `POST /api/turn` accepts only `application/json` (no cross-site simple requests) |
+  | DNS rebinding against a local install (a web page reaching the friend's Ollama through the app) | With a loopback `HOST`, the server answers only requests whose `Host` is `localhost`, `127.0.0.1` or `[::1]` (403 otherwise); `POST /api/turn` also requires `application/json` |
   | Secret leak | Key only in Secret Manager → env var; config errors never print values (AC-010.2); gitleaks |
   | Leaking learner text in logs | Logger accepts only a fixed set of metadata fields (NFR-002, NFR-007) |
 
@@ -191,7 +194,7 @@ prompt ("Your previous answer was invalid because …").
      create a 5 USD billing budget with 50/90/100% alerts.
   2. Every release: `gcloud run deploy hanashigemma --source . --region=europe-southwest1
      --service-account=hanashigemma-run@… --set-secrets=GEMINI_API_KEY=gemini-api-key:latest
-     --set-env-vars=GEMMA_BACKEND=gemini,GEMMA_MODEL=gemma-4-26b-a4b-it
+     --set-env-vars=GEMMA_BACKEND=gemini,GEMMA_MODEL=gemma-4-26b-a4b-it,HOST=0.0.0.0
      --allow-unauthenticated --min-instances=0 --max-instances=1 --memory=512Mi`.
   CI (GitHub Actions) runs lint, typecheck, tests and audit; it does **not** deploy in v1.
   `infra/` stays as the scaffold until the Terraform port (T-011).

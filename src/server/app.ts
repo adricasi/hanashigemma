@@ -1,17 +1,36 @@
 import { serveStatic } from "@hono/node-server/serve-static";
 import { Hono } from "hono";
+import { bodyLimit } from "hono/body-limit";
 import { secureHeaders } from "hono/secure-headers";
 
 import type { Config } from "../config.js";
-import { SCENARIOS } from "../scenarios.js";
+import type { ModelAdapter } from "../model/adapter.js";
+import { publicScenario, SCENARIOS } from "../scenarios.js";
+import { handleTurn, rejectTurn } from "./turn.js";
+
+/** design.md, Data model: request body ≤ 32 KB. */
+const MAX_TURN_BODY_BYTES = 32 * 1024;
+
+/** Names (and HOST values) that mean "this machine only". */
+const LOOPBACK_HOSTS = new Set(["localhost", "127.0.0.1", "::1", "[::1]"]);
+
+/** "localhost:8080" → "localhost", "[::1]:8080" → "[::1]". */
+function hostnameOf(hostHeader: string): string {
+  try {
+    return new URL(`http://${hostHeader}`).hostname;
+  } catch {
+    return "";
+  }
+}
 
 export interface AppOptions {
   config: Config;
   /** Absolute path of the directory holding the built UI (index.html, styles, js/). */
   staticRoot: string;
+  adapter: ModelAdapter;
 }
 
-export function createApp({ config, staticRoot }: AppOptions): Hono {
+export function createApp({ config, staticRoot, adapter }: AppOptions): Hono {
   const app = new Hono();
 
   // NFR-001: no inline scripts, no third-party origins, no framing.
@@ -31,6 +50,18 @@ export function createApp({ config, staticRoot }: AppOptions): Hono {
     }),
   );
 
+  // DNS rebinding: a page on another site can point its own name at 127.0.0.1 and then call
+  // this server as "same origin". A local install therefore only answers to local names.
+  if (LOOPBACK_HOSTS.has(config.host)) {
+    app.use(async (c, next) => {
+      const host = c.req.header("host") ?? new URL(c.req.url).host;
+      if (!LOOPBACK_HOSTS.has(hostnameOf(host))) {
+        return c.text("Forbidden", 403);
+      }
+      await next();
+    });
+  }
+
   // Errors may carry learner text or upstream URLs, so only the error type is logged (NFR-002).
   app.onError((error, c) => {
     console.error(JSON.stringify({ message: "unhandled_error", errorType: error.name }));
@@ -41,7 +72,40 @@ export function createApp({ config, staticRoot }: AppOptions): Hono {
 
   // Only public settings: the credential must never leave the server.
   app.get("/api/config", (c) =>
-    c.json({ backend: config.backend, model: config.model, scenarios: SCENARIOS }),
+    c.json({
+      backend: config.backend,
+      model: config.model,
+      scenarios: SCENARIOS.map(publicScenario),
+    }),
+  );
+
+  app.post(
+    "/api/turn",
+    bodyLimit({
+      maxSize: MAX_TURN_BODY_BYTES,
+      onError: (c) => {
+        const result = rejectTurn(config, "The request is too large.");
+        return c.json(result.body, result.status);
+      },
+    }),
+    async (c) => {
+      // JSON only: a text/plain POST from another site would skip the CORS preflight.
+      // Media types are case-insensitive (RFC 9110).
+      const contentType = (c.req.header("content-type") ?? "").trim().toLowerCase();
+      if (!contentType.startsWith("application/json")) {
+        const result = rejectTurn(config, "Requests must be sent as JSON.");
+        return c.json(result.body, result.status);
+      }
+      let body: unknown;
+      try {
+        body = await c.req.json();
+      } catch {
+        body = undefined; // Not JSON: rejected as an invalid turn below.
+      }
+      // The request's signal aborts the model call if the browser goes away.
+      const result = await handleTurn({ config, adapter }, body, c.req.raw.signal);
+      return c.json(result.body, result.status);
+    },
   );
 
   app.use("/*", serveStatic({ root: staticRoot }));

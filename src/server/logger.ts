@@ -1,7 +1,12 @@
 import type { Backend } from "../config.js";
 
 export type ErrorCode =
-  "invalid_request" | "rate_limited" | "demo_busy" | "model_invalid_output" | "model_unavailable";
+  | "invalid_request"
+  | "rate_limited"
+  | "demo_busy"
+  | "model_invalid_output"
+  | "model_unavailable"
+  | "internal";
 
 /** NFR-007: the only fields a turn log may carry. Never message content (NFR-002). */
 export interface TurnLogRecord {

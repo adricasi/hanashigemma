@@ -36,7 +36,7 @@ a deployed link, and Milestone 1 already produces a public URL.
     log record shape pass; `npm run lint && npm run typecheck && npm test` green;
     `npm start` shows the scenario list at `http://localhost:8080`.
 
-- [ ] T-002: First Gemma turn end to end with Ollama (~2 h) — **riskiest: JSON reliability**
+- [x] T-002: First Gemma turn end to end with Ollama (~2 h) — **riskiest: JSON reliability**
   - Requirements: REQ-001 (AC-001.2, AC-001.3), REQ-002 (AC-002.1–AC-002.4), REQ-003,
     REQ-010 (AC-010.3, AC-010.4), NFR-004 (timeout)
   - Depends on: T-001

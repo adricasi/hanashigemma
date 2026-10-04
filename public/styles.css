@@ -64,24 +64,152 @@ h1 {
   list-style: none;
 }
 
+/* Keeps elements toggled with the hidden attribute hidden even when a class sets display. */
+[hidden] {
+  display: none !important;
+}
+
+button {
+  font: inherit;
+  cursor: pointer;
+}
+
+button:focus-visible,
+textarea:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
+}
+
 .scenario {
+  display: block;
+  width: 100%;
   padding: 1rem;
   border: 1px solid var(--border);
   border-left: 4px solid var(--accent);
   border-radius: 0.5rem;
   background: var(--surface);
+  color: var(--text);
+  text-align: left;
+}
+
+.scenario:hover {
+  border-color: var(--accent);
 }
 
 .scenario-title {
+  display: block;
   margin: 0 0 0.25rem;
   font-size: 1.125rem;
+  font-weight: 600;
 }
 
 .scenario-goal,
 .scenario-role {
+  display: block;
+}
+
+.scenario-role,
+.scene-goal {
+  color: var(--muted);
+}
+
+.scene-goal {
+  margin-top: -0.5rem;
+}
+
+.transcript {
+  display: grid;
+  gap: 0.5rem;
+  margin: 1rem 0;
+  padding: 0;
+  list-style: none;
+}
+
+.turn {
+  max-width: 85%;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  background: var(--surface);
+}
+
+.turn-learner {
+  justify-self: end;
+  background: #e8f1fb;
+}
+
+.turn-speaker {
+  display: block;
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
+.turn-text {
+  margin: 0;
+  font-size: 1.25rem;
+  white-space: pre-wrap;
+}
+
+.waiting {
+  color: var(--muted);
+  font-style: italic;
+}
+
+.turn-error {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1rem;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #d4a72c;
+  border-radius: 0.5rem;
+  background: #fff8c5;
+}
+
+.turn-error p {
   margin: 0;
 }
 
-.scenario-role {
+.composer label {
+  display: block;
+  margin-bottom: 0.25rem;
   color: var(--muted);
+  font-size: 0.875rem;
+}
+
+.composer-row {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.composer textarea {
+  flex: 1;
+  min-width: 0;
+  padding: 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  font: inherit;
+  font-size: 1.125rem;
+  resize: vertical;
+}
+
+#send-button,
+.secondary {
+  padding: 0.5rem 1rem;
+  border: 1px solid var(--accent);
+  border-radius: 0.5rem;
+  background: var(--accent);
+  color: #ffffff;
+}
+
+.secondary {
+  background: var(--surface);
+  color: var(--accent);
+}
+
+#send-button:disabled {
+  border-color: var(--border);
+  background: var(--border);
+  color: var(--muted);
+  cursor: not-allowed;
 }

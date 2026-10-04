@@ -6,6 +6,7 @@ import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
 import { loadConfig } from "../src/config.js";
 import { createApp } from "../src/server/app.js";
+import { fakeAdapter } from "./fixtures.js";
 
 const CSP_DIRECTIVES = [
   "default-src 'self'",
@@ -29,7 +30,7 @@ afterAll(() => {
 });
 
 function app(env: Record<string, string> = {}) {
-  return createApp({ config: loadConfig(env), staticRoot });
+  return createApp({ config: loadConfig(env), staticRoot, adapter: fakeAdapter([]).adapter });
 }
 
 describe("GET /healthz", () => {
@@ -55,6 +56,8 @@ describe("GET /api/config", () => {
       "Asking for directions in Kyoto",
     ]);
     for (const scenario of body.scenarios) {
+      // Only the public fields: the prompt's opening instruction stays on the server.
+      expect(Object.keys(scenario).sort()).toEqual(["goal", "id", "role", "title"]);
       expect(scenario.id).toMatch(/^[a-z]+(-[a-z]+)*$/);
       expect(scenario.goal.trim()).not.toBe("");
       expect(scenario.role.trim()).not.toBe("");
@@ -94,6 +97,31 @@ describe("security headers", () => {
       expect(response.headers.get("set-cookie")).toBeNull();
     },
   );
+});
+
+describe("Host header (DNS rebinding)", () => {
+  function requestWithHost(target: ReturnType<typeof app>, host: string) {
+    return target.request("http://placeholder/api/config", { headers: { host } });
+  }
+
+  it.each(["localhost:8080", "127.0.0.1:8080", "[::1]:8080", "localhost"])(
+    "NFR-001: answers a local install reached as %s",
+    async (host) => {
+      expect((await requestWithHost(app(), host)).status).toBe(200);
+    },
+  );
+
+  it("NFR-001: refuses another site's name pointed at the local install", async () => {
+    const response = await requestWithHost(app(), "evil.example:8080");
+
+    expect(response.status).toBe(403);
+  });
+
+  it("accepts any Host when listening on all interfaces (Cloud Run)", async () => {
+    const response = await requestWithHost(app({ HOST: "0.0.0.0" }), "hanashigemma.run.app");
+
+    expect(response.status).toBe(200);
+  });
 });
 
 describe("unexpected errors", () => {

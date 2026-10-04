@@ -47,6 +47,16 @@ describe("loadConfig", () => {
     expect(config.model).toBe("gemma-4-26b-a4b-it");
   });
 
+  it("NFR-001: listens on localhost only unless HOST says otherwise", () => {
+    expect(loadConfig({}).host).toBe("127.0.0.1");
+    expect(loadConfig({ HOST: "0.0.0.0" }).host).toBe("0.0.0.0");
+    expect(loadConfig({ HOST: "::" }).host).toBe("::");
+  });
+
+  it("AC-010.2: refuses a HOST that is not an address or host name", () => {
+    expect(configError({ HOST: "localhost; rm -rf /" }).message).toContain("HOST");
+  });
+
   it("AC-010.1: reads the port and limits from configuration", () => {
     const config = loadConfig({ PORT: "3000", DAILY_TURN_CAP: "200", PER_MINUTE_LIMIT: "5" });
 
