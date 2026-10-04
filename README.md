@@ -8,7 +8,7 @@ your own laptop** with Google's open-weight **Gemma 4** model through
 
 > Built for the DEV Hacktoberfest Weekend Challenge: *Build for a Friend*.
 
-## Demo
+## Demo t
 
 [HanashiGemma Demo](https://www.youtube.com/watch?v=Xcb_41Hrddw).
 
