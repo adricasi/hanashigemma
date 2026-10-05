@@ -60,8 +60,9 @@ The client is compiled separately with `src/client/tsconfig.json`.
 
 ## Tests — `test/`
 
-Vitest, one file per module (`test/<module>.test.ts`; UI tests in `test/client/` with
-happy-dom). `fixtures.ts` holds a valid sample reply and a fake model adapter;
+Vitest, mostly one file per module (`server.test.ts` covers `server/app.ts`; most UI tests
+are in `test/client/` with happy-dom, and `limits.test.ts` checks client and server limits
+agree). `fixtures.ts` holds a valid sample reply and a fake model adapter;
 `adapter-parity.test.ts` checks both backends behave the same. No real model or network
 calls.
 
@@ -94,4 +95,3 @@ calls.
 | `.pre-commit-config.yaml` | Pre-commit hooks, including the gitleaks secret scan. |
 | `.github/workflows/` | CI: Node checks, Terraform checks, security scans. |
 | `.github/dependabot.yml` | Dependency updates. |
-| `AGENTS.md`, `CLAUDE.md` | Rules for AI coding agents working on this repo. |
