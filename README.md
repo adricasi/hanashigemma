@@ -88,7 +88,8 @@ npm run build
 
 TypeScript (strict), Hono, zod, Vitest. No real model calls in tests. The specification
 (requirements with acceptance criteria, design, task plan) is in [docs/spec](docs/spec/)
-and architecture decisions in [docs/adr](docs/adr/).
+and architecture decisions in [docs/adr](docs/adr/). [INDEX.md](INDEX.md) maps where each
+part of the code lives.
 
 ## License
 
